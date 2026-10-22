@@ -27,4 +27,47 @@ Use Case Diagram:
 Wireframe:
   - Attached in Repo
 
+Extra Credit:
+
+1) Loss or corrupted user progress data
+
+Severity: High
+
+If saving fails or data is lost during a crash, then the user would lose trust and stop using the app.
+
+Some ways that we can fix this would be by saving after each card and not at the end of each session or we could test edge cases such as closing the app mid-session or losing internet.
+
+2) Time zones and date bugs in the streaks or calendar
+
+Severity: High
+
+The calendar and streaks depend on accurately tracking days. If the app uses the server time instead of the user's local time then the user could lose streaks unfairly or be misinformed about when their exam might be.
+
+One way we could fix this issue would be to store the timestamps in a certain time zone, and convert it to the user's local time zone for display and streak logic.
+
+3) Cross-device and browser compatibility
+
+Severity: Medium
+
+Students study on multiple different platforms such as tablets, laptops, or phones. Layouts or touch/swipe controls that work on one device might not work for the other.
+
+We could fix this issue by using a responsive design approach such as mobile-first CSS from the very start. Another way would be to check each milestone on different platforms to ensure that they work as intended.
+
+4) Gamification might encourage the wrong behavior
+
+Severity: Low
+
+With the addition of leaderboards, user might rush through cards just to earn points rather than actually learning the material. A user losing their streak could also demotivate them from using the app any further.
+
+Some way we can fix this would include adding a system that limits how many points a user can get from a certain set of flashcards. We could also give them a "streak freeze" that gives the user a day grace period so that their streak isn't completely gone.
+
+5) Slow performance with large decks
+
+Severity: Medium
+
+Some users might have decks with hundreds to thousands of cards, this alongside the leaderboard being recalculated each time someone open the page could make the app slow to load and frustrating to use.
+
+Some ways we could fix this would be to load cards in small batches rather than loading the entire deck and instead of recalculating the leaderboard each time the page is opened we could update the leaderboard every few minutes.
+
+
 
