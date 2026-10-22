@@ -1,0 +1,30 @@
+Group3Proj
+
+Team Number: 3
+Team Name: Qwizards
+Team Members: 
+Jackson Roy
+Travis Ellis
+Max McEvoy!
+Eric Lin
+
+
+Application Name: Scramble
+Application Description:
+Scramble is a flashcard study tool that continuously tracks your progress through each set of cards. 
+Audience: Students/Self-learners
+Vision Statement: Scramble is a flashcard study tool that’s by students and for students and academics who want to excel.
+Communication Plan: Jira
+Use Case Diagram: 
+- Leaderboard
+- Streaks
+- Calendar
+- Space repetition
+- Shuffle flashcards
+- Gamified
+- User attention
+- Saving Progress
+Wireframe:
+  - Attached in Repo
+
+
