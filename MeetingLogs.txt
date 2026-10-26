@@ -1,2 +1,21 @@
 ==MEETING 1 Monday October 26==
-    -->
+    Each Week requirements:
+    1) Ask about GitHub, and making sure commits are integrated onto main branch
+    	1a) Resolve any conflicts / pull requests
+    2) Functionality
+    	2a) What functionality were you planning to have by this point, what do you have now
+    3) Update the project board
+    4) Update the release notes
+    	4a) Have these in the milestones submission folder
+    5) Someone scribes the meeting and uploads the notes to the repository 
+    	5a) "Minutes of the meeting" - what did we talk about
+    
+    
+    
+    One thing to talk about:
+    1) Think about what kind of major components would be part of this project
+    2) What needs to get done
+    3) How does that link up
+    4) How is that going to link up
+
+==MEETING 2 Monday November 2==
