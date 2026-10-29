@@ -5,9 +5,9 @@ Team Name: Qwizards
 Team Members: 
 Jackson Roy
 Travis Ellis
-Max McEvoy!
+Max McEvoy
 Eric Lin
-
+Amelia Kulihaapai
 
 Application Name: Scramble
 Application Description:
