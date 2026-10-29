@@ -1,0 +1,33 @@
+<h2>Discover Events</h2>
+
+ {{>message}}
+
+
+    <table class="table">
+  <thead>
+    <tr>
+      <th scope="col">Event Name</th>
+      <th scope="col">Image</th>
+      <th scope="col">Date</th>
+      <th scope="col">Time</th>
+      <th>Booking</th>
+    </tr>
+  </thead>
+  <tbody>
+    {{#each events}}
+    <tr>
+      <td>{{name}}</td>
+      <td>{{#if images.[0].url}}<img src="{{images.[0].url}}" width="100" alt="{{name}}">{{else}}No image available{{/if}}</td>
+      <td>{{dates.start.localDate}}</td>
+      <td>{{#if dates.start.localTime}}
+            {{dates.start.localTime}}
+            {{else}}Not specified
+            {{/if}}
+      </td>
+    <td> 
+        <a href="{{url}}" class="btn btn-primary">Book Now</a>
+    </td>
+    </tr>
+    {{/each}}
+  </tbody>
+</table>
