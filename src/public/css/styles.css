@@ -98,3 +98,18 @@
 .login-brand { color: #f4f3ff; font-size: 2rem; font-weight: 800; letter-spacing: -.07em; }
 .light-mode .login-top-bar { background: #d0ddec; border-color: #a4a6c3; }
 .light-mode .login-brand { color: #21213b; }
+
+/* Show/hide password button inside the password field. */
+.password-field { position: relative; margin-bottom: 1.5rem; }
+.password-field .field-input { margin-bottom: 0; padding-right: 3.25rem; }
+.password-toggle { position: absolute; top: 50%; right: .35rem; transform: translateY(-50%); display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 0; border-radius: .4rem; background: transparent; color: #c2c2d9; cursor: pointer; }
+.password-toggle[hidden] { display: none; }
+.password-toggle:hover { background: #363659; color: #f4f3ff; }
+.password-toggle:focus-visible { outline: 3px solid #c2c2d9; outline-offset: 2px; }
+.password-icon { width: 20px; height: 20px; }
+.password-hide-icon { display: none; }
+.password-toggle[aria-pressed="true"] .password-show-icon { display: none; }
+.password-toggle[aria-pressed="true"] .password-hide-icon { display: block; }
+.light-mode .password-toggle { color: #363659; }
+.light-mode .password-toggle:hover { background: #c2c6e3; color: #21213b; }
+.light-mode .password-toggle:focus-visible { outline-color: #505077; }
