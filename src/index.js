@@ -5,13 +5,11 @@
 const express = require('express'); // To build an application server or API
 const app = express();
 const handlebars = require('express-handlebars'); //to enable express to work with handlebars
-const Handlebars = require('handlebars'); // to include the templating engine responsible for compiling templates
 const path = require('path');
 const pgp = require('pg-promise')(); // To connect to the Postgres DB from the node server
 const bodyParser = require('body-parser');
 const session = require('express-session'); // To set the session object. To store or access session data, use the `req.session`, which is (generally) serialized as JSON by the store.
 const bcrypt = require('bcryptjs'); //  To hash passwords
-const axios = require('axios'); // To make HTTP requests from our server. We'll learn more about it in Part C.
 
 // *****************************************************
 // <!-- Section 2 : Connect to DB -->
@@ -53,6 +51,7 @@ db.connect()
 app.engine('hbs', hbs.engine);
 app.set('view engine', 'hbs');
 app.set('views', path.join(__dirname, 'views'));
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.json()); // specify the usage of JSON for parsing request body.
 
 // initialize session variables
@@ -82,83 +81,79 @@ const auth = (req, res, next) => {
   next();
 };
 
-// Authentication Required
-// app.use(auth); Removing this line of code
-
-//Instead we will use auth in our routes that require the user to be authenticated
-
-//For eg: /discover route will look as follows:
-
-//app.get('/discover', auth, (req,res) => {
-//  ....
-//});
-
-//do the same for logout
-
-// TODO - Include your API routes here
 app.get('/', (req, res) => {
-  res.redirect('/login'); //this will call the /anotherRoute route in the API
+  res.redirect(req.session.user ? '/home' : '/login');
 });
 app.get('/register', (req, res) => {
   res.render('pages/register');
 });
-app.post('/register', async(req, res) => {
-    const hash = await bcrypt.hash(req.body.password, 10);
-    const { username } = req.body;
-    await db.none('INSERT INTO users(username, password) VALUES($1, $2) ON CONFLICT (username) DO NOTHING', [username, hash]);
-    res.redirect('/login');
-});
-app.get('/login', (req, res) => {
-    res.render('pages/login');
-});
-app.post('/login', async(req, res) => {
-    const {username, password} = req.body;
-    const user = await db.oneOrNone('SELECT * FROM users WHERE username = $1', [username]);
-
-    if (!user) {
-        return res.redirect('/register');
-    }
-    const match = await bcrypt.compare(req.body.password, user.password);
-    if (match) {
-        req.session.user = user;
-        req.session.save();
-        res.redirect('/discover'); // redirect to a protected route after successful login
-    } else {
-        res.render('pages/login', { message: 'Incorrect username or password.', error: true });
-    }
-});
-app.get('/discover', auth, async (req, res) => {
-    axios({
-  url: `https://app.ticketmaster.com/discovery/v2/events.json`,
-  method: 'GET',
-  dataType: 'json',
-  headers: {
-    'Accept-Encoding': 'application/json',
-  },
-  params: {
-    apikey: process.env.API_KEY,
-    keyword: 'football', //you can choose any artist/event here
-    size: 10, // you can choose the number of events you would like to return
-  },
-})
-  .then(results => {
-    console.log(results.data._embedded?.events?.[0]?.dates); // the results will be displayed on the terminal if the docker containers are running // Send some parameters
-
-    res.render('pages/discover', { events: results.data._embedded.events || []
-
-    });
-})
-  .catch(error => {
-    // Handle errors
-    console.error(error);
-
-    res.render('pages/discover', { events: [],
-        message: 'Unable to load events. Please try again later.',
-        error: true
-     });
-
+app.get('/home', auth, (req, res) => {
+  res.render('pages/home', {
+    isHome: true,
+    username: req.session.user.username,
   });
 });
+app.post('/register', async (req, res) => {
+  const { username, email, password } = req.body;
+  if (typeof username !== 'string' || !username.trim() || username.length > 50 ||
+      typeof email !== 'string' || !email.trim() || email.length > 100 ||
+      typeof password !== 'string' || !password) {
+    return res.status(400).render('pages/register', {
+      message: 'Enter a username, email, and password.', error: true,
+    });
+  }
+  try {
+    const hash = await bcrypt.hash(password, 10);
+    await db.none(
+      'INSERT INTO users(username, email, password_hash) VALUES($1, $2, $3)',
+      [username.trim(), email.trim(), hash]
+    );
+    return res.redirect('/login');
+  } catch (error) {
+    const duplicate = error.code === '23505';
+    console.error('Registration failed:', error.code);
+    return res.status(duplicate ? 409 : 500).render('pages/register', {
+      message: duplicate ? 'That username or email is already registered.' :
+        'Unable to register. Please try again after the database is ready.',
+      error: true,
+    });
+  }
+});
+app.get('/login', (req, res) => {
+  res.render('pages/login');
+});
+app.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+  if (typeof username !== 'string' || typeof password !== 'string' || !username || !password) {
+    return res.status(400).render('pages/login', {
+      message: 'Enter your username and password.', error: true,
+    });
+  }
+  try {
+    const user = await db.oneOrNone('SELECT * FROM users WHERE username = $1', [username.trim()]);
+    if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+      return res.status(401).render('pages/login', {
+        message: 'Incorrect username or password.', error: true,
+      });
+    }
+    req.session.regenerate(err => {
+      if (err) return loginSessionError(res);
+      req.session.user = { user_id: user.user_id, username: user.username };
+      req.session.save(err => {
+        if (err) return loginSessionError(res);
+        return res.redirect('/home');
+      });
+    });
+  } catch (error) {
+    console.error('Login failed:', error.code);
+    return loginSessionError(res);
+  }
+});
+function loginSessionError(res) {
+  return res.status(500).render('pages/login', {
+    message: 'Unable to log in. Please try again later.', error: true,
+  });
+}
 app.get('/logout', (req, res) => {
     req.session.destroy((err) => {
         if (err) {

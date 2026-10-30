@@ -1,0 +1,44 @@
+<header>
+  <a href="/home">scramble.</a>
+  <p>{{#if username}}{{username}}{{else}}Your name{{/if}} — Your study space</p>
+  <nav aria-label="Main navigation">
+    <ul>
+      <li><a href="/home" aria-current="page">Home</a></li>
+      <li><button type="button" disabled>Content (coming soon)</button></li>
+      <li><button type="button" disabled>Progress (coming soon)</button></li>
+      <li><button type="button" disabled>Friends (coming soon)</button></li>
+    </ul>
+    <a href="/logout">Log out</a>
+  </nav>
+</header>
+
+<main id="main-content">
+  {{> message}}
+  <h1>Welcome back{{#if username}}, {{username}}{{/if}}.</h1>
+  <p>A fresh start for your next study session.</p>
+
+  <section aria-labelledby="exam-heading">
+    <h2 id="exam-heading">Your next milestone</h2>
+    <p>Your exam countdown will appear here once an exam is added.</p>
+  </section>
+
+  <section aria-labelledby="create-heading">
+    <h2 id="create-heading">Create something new</h2>
+    <h3>Big ideas, bite-sized cards.</h3>
+    <p>Build a flashcard set and make it stick.</p>
+    <button type="button" disabled>Create new set</button>
+    <p>Set creation is coming soon.</p>
+  </section>
+
+  <section aria-labelledby="recent-heading">
+    <h2 id="recent-heading">Recently used</h2>
+    {{#each recentSets}}
+      <article>
+        <h3>{{name}}</h3>
+        <p>{{cardCount}} cards</p>
+      </article>
+    {{else}}
+      <p>Once you start studying, your recent sets will appear here.</p>
+    {{/each}}
+  </section>
+</main>
