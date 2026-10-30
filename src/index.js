@@ -119,6 +119,10 @@ app.post('/register', async (req, res) => {
     });
   }
 });
+app.all('/login', (req, res, next) => {
+  res.locals.isLogin = true;
+  next();
+});
 app.get('/login', (req, res) => {
   res.render('pages/login');
 });
