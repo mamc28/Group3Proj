@@ -1,0 +1,49 @@
+.site-page {
+  margin: 0;
+  background: #121226;
+  color: #f4f3ff;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.6;
+}
+
+.dashboard { min-height: 100vh; display: flex; flex-wrap: wrap; }
+.sidebar { box-sizing: border-box; flex: 0 0 260px; max-width: 100%; padding: 2.5rem 1.5rem; background: #21213b; border-right: 1px solid #363659; }
+.brand { color: #f4f3ff; text-decoration: none; font-size: 2rem; font-weight: 800; letter-spacing: -.07em; }
+.sidebar-description { color: #c2c2d9; font-size: .85rem; margin-bottom: 3rem; }
+.navigation-list { list-style: none; padding: 0; display: grid; gap: .75rem; }
+.navigation-item { box-sizing: border-box; display: block; width: 100%; padding: .8rem 1rem; text-align: left; border-radius: .65rem; font: inherit; font-size: .9rem; color: #f4f3ff; text-decoration: none; }
+.navigation-active { background: #363659; border-left: 3px solid #6868a6; font-weight: 650; }
+.navigation-placeholder { background: transparent; border: 1px solid transparent; color: #c2c2d9; cursor: not-allowed; }
+.logout-link { display: inline-block; margin: 2rem 1rem 0; color: #c2c2d9; text-decoration: none; }
+.brand:hover, .logout-link:hover, .navigation-active:hover { text-decoration: underline; }
+.dashboard-content { box-sizing: border-box; flex: 4 1 500px; min-width: 0; max-width: 1200px; padding: 4rem clamp(1.5rem, 5vw, 5rem); margin: 0 auto; }
+.welcome-heading { font-size: clamp(2rem, 4vw, 3rem); line-height: 1.2; letter-spacing: -.03em; margin: 0 0 1rem; }
+.exam-banner { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; padding: 1.25rem 1.5rem; margin-bottom: 3rem; border: 1px solid #363659; border-radius: 1rem; background: #21213b; }
+.calendar-icon { display: grid; place-items: center; width: 3rem; height: 3rem; border-radius: .75rem; background: #363659; font-size: 1.6rem; }
+.exam-summary { flex: 1 1 200px; min-width: 0; }
+.exam-heading { margin: 0 0 .35rem; font-size: 1rem; }
+.exam-description { margin: 0 0 .75rem; color: #c2c2d9; font-size: .85rem; }
+.exam-progress-track { height: .5rem; overflow: hidden; border-radius: 1rem; background: #363659; }
+.exam-progress-fill { display: block; width: 0%; height: 100%; background: #6868a6; border-radius: 1rem; }
+.exam-status { color: #c2c2d9; font-size: .85rem; }
+.welcome-description { color: #c2c2d9; margin-bottom: 3rem; }
+.dashboard-card { padding: 2rem; margin-bottom: 1.5rem; border: 1px solid #363659; border-radius: 1rem; background: #21213b; }
+.card-heading { margin: 0 0 1rem; font-size: 1.15rem; line-height: 1.2; letter-spacing: -.03em; }
+.card-title { font-size: clamp(1.5rem, 3vw, 2rem); margin: 1.5rem 0 .75rem; line-height: 1.2; letter-spacing: -.03em; }
+.card-description { color: #c2c2d9; }
+.create-card { background: linear-gradient(120deg, #363659, #21213b); border-color: #505077; }
+.create-button { padding: .75rem 1.25rem; margin-top: 1rem; border: 1px solid #505077; border-radius: .65rem; background: #363659; color: #c2c2d9; font: inherit; font-weight: 600; cursor: not-allowed; }
+.recent-set { padding-top: 1rem; border-top: 1px solid #363659; }
+.site-footer { flex-basis: 100%; }
+
+.auth-heading { width: min(420px, calc(100% - 3rem)); margin: 4rem auto 1.5rem; font-size: 2rem; }
+.auth-form { box-sizing: border-box; width: min(420px, calc(100% - 3rem)); margin: 0 auto 3rem; padding: 2rem; border: 1px solid #363659; border-radius: 1rem; background: #21213b; }
+.field-label { display: block; margin-bottom: .4rem; color: #c2c2d9; }
+.field-input { box-sizing: border-box; width: 100%; padding: .7rem .9rem; margin-bottom: 1.5rem; border: 1px solid #505077; border-radius: .5rem; background: #121226; color: #f4f3ff; font: inherit; }
+.submit-button { width: 100%; padding: .75rem 1.25rem; border: 1px solid #6868a6; border-radius: .65rem; background: #6868a6; color: #f4f3ff; font: inherit; font-weight: 600; cursor: pointer; }
+.auth-page .navbar { background: #21213b; border-color: #363659 !important; }
+.auth-page .nav-link { color: #f4f3ff; }
+.auth-page .nav-link:hover { color: #c2c2d9; }
+.auth-page .navbar-toggler { background: #c2c2d9; }
+.alert { margin: 1rem auto; width: min(600px, calc(100% - 3rem)); }
+.brand:focus-visible, .navigation-item:focus-visible, .logout-link:focus-visible, .create-button:focus-visible, .field-input:focus-visible, .submit-button:focus-visible { outline: 3px solid #c2c2d9; outline-offset: 4px; }

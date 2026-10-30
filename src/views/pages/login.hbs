@@ -1,12 +1,12 @@
-<h2>Login</h2>
+<h2 class="auth-heading">Login</h2>
  {{>message}}
 
- <form action="/login" method="POST">
-     <label for="username">Username:</label>
-     <input type="text" id="username" name="username" required>
+ <form class="auth-form" action="/login" method="POST">
+     <label class="field-label" for="username">Username:</label>
+     <input class="field-input" type="text" id="username" name="username" required>
 
-     <label for="password">Password:</label>
-     <input type="password" id="password" name="password" required>
+     <label class="field-label" for="password">Password:</label>
+     <input class="field-input" type="password" id="password" name="password" required>
 
-     <button type="submit">Login</button>
+     <button class="submit-button" type="submit">Login</button>
  </form>

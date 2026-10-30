@@ -1,44 +1,51 @@
-<header>
-  <a href="/home">scramble.</a>
-  <p>{{#if username}}{{username}}{{else}}Your name{{/if}} — Your study space</p>
+<header class="sidebar">
+  <a class="brand" href="/home">scramble.</a>
+  <p class="sidebar-description">{{#if username}}{{username}}{{else}}Your name{{/if}} — Your study space</p>
   <nav aria-label="Main navigation">
-    <ul>
-      <li><a href="/home" aria-current="page">Home</a></li>
-      <li><button type="button" disabled>Content (coming soon)</button></li>
-      <li><button type="button" disabled>Progress (coming soon)</button></li>
-      <li><button type="button" disabled>Friends (coming soon)</button></li>
+    <ul class="navigation-list">
+      <li><a class="navigation-item navigation-active" href="/home" aria-current="page">Home</a></li>
+      <li><button class="navigation-item navigation-placeholder" type="button" disabled>Content (coming soon)</button></li>
+      <li><button class="navigation-item navigation-placeholder" type="button" disabled>Progress (coming soon)</button></li>
+      <li><button class="navigation-item navigation-placeholder" type="button" disabled>Friends (coming soon)</button></li>
     </ul>
-    <a href="/logout">Log out</a>
+    <a class="logout-link" href="/logout">Log out</a>
   </nav>
 </header>
 
-<main id="main-content">
+<main class="dashboard-content" id="main-content">
   {{> message}}
-  <h1>Welcome back{{#if username}}, {{username}}{{/if}}.</h1>
-  <p>A fresh start for your next study session.</p>
-
-  <section aria-labelledby="exam-heading">
-    <h2 id="exam-heading">Your next milestone</h2>
-    <p>Your exam countdown will appear here once an exam is added.</p>
+  <section class="exam-banner" aria-labelledby="exam-heading">
+    <span class="calendar-icon" aria-hidden="true">&#128197;</span>
+    <div class="exam-summary">
+      <h2 class="exam-heading" id="exam-heading">Your next exam</h2>
+      <p class="exam-description">Your exam date and days remaining will appear here.</p>
+      <div class="exam-progress-track" role="progressbar" aria-label="Exam preparation: no exam added" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <span class="exam-progress-fill"></span>
+      </div>
+    </div>
+    <span class="exam-status">No exam added yet</span>
   </section>
 
-  <section aria-labelledby="create-heading">
-    <h2 id="create-heading">Create something new</h2>
-    <h3>Big ideas, bite-sized cards.</h3>
-    <p>Build a flashcard set and make it stick.</p>
-    <button type="button" disabled>Create new set</button>
-    <p>Set creation is coming soon.</p>
+  <h1 class="welcome-heading">Welcome back{{#if username}}, {{username}}{{/if}}.</h1>
+  <p class="welcome-description">A fresh start for your next study session.</p>
+
+  <section class="dashboard-card create-card" aria-labelledby="create-heading">
+    <h2 class="card-heading" id="create-heading">Create something new</h2>
+    <h3 class="card-title">Big ideas, bite-sized cards.</h3>
+    <p class="card-description">Build a flashcard set and make it stick.</p>
+    <button class="create-button" type="button" disabled>Create new set</button>
+    <p class="card-description">Set creation is coming soon.</p>
   </section>
 
-  <section aria-labelledby="recent-heading">
-    <h2 id="recent-heading">Recently used</h2>
+  <section class="dashboard-card" aria-labelledby="recent-heading">
+    <h2 class="card-heading" id="recent-heading">Recently used</h2>
     {{#each recentSets}}
-      <article>
-        <h3>{{name}}</h3>
-        <p>{{cardCount}} cards</p>
+      <article class="recent-set">
+        <h3 class="card-title">{{name}}</h3>
+        <p class="card-description">{{cardCount}} cards</p>
       </article>
     {{else}}
-      <p>Once you start studying, your recent sets will appear here.</p>
+      <p class="card-description">Once you start studying, your recent sets will appear here.</p>
     {{/each}}
   </section>
 </main>

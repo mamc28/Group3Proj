@@ -1,12 +1,12 @@
-<h2>Register</h2>
+<h2 class="auth-heading">Register</h2>
 {{>message}}
 
-<form action="/register" method="POST">
-  <label for="username">Username:</label><br>
-  <input type="text" id="username" name="username" maxlength="50" required><br>
-  <label for="email">Email:</label><br>
-  <input type="email" id="email" name="email" maxlength="100" required><br>
-  <label for="password">Password:</label><br>
-  <input type="password" id="password" name="password" required><br><br>
-  <input type="submit" value="Register">
+<form class="auth-form" action="/register" method="POST">
+  <label class="field-label" for="username">Username:</label>
+  <input class="field-input" type="text" id="username" name="username" maxlength="50" required>
+  <label class="field-label" for="email">Email:</label>
+  <input class="field-input" type="email" id="email" name="email" maxlength="100" required>
+  <label class="field-label" for="password">Password:</label>
+  <input class="field-input" type="password" id="password" name="password" required>
+  <input class="submit-button" type="submit" value="Register">
 </form>
