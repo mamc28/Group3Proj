@@ -1,7 +1,11 @@
 <!-- TODO: Add the head.hbs partial here -->
 {{>head}}
 <!-- TODO: Add the nav.hbs partial here -->
-{{#unless isHome}}{{> nav }}{{/unless}}
+{{#if isLogin}}
+  <header class="login-top-bar"><span class="login-brand">scramble.</span></header>
+{{else}}
+  {{#unless isHome}}{{> nav }}{{/unless}}
+{{/if}}
 {{{body}}}
 <!-- TODO: Add the footer.hbs partial here -->
 {{> footer }}
