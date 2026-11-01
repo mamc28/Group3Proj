@@ -180,6 +180,55 @@ app.get('/logout', (req, res) => {
         });
     });
 });
+
+/// Separate function to update streak; didn't want to nest this whole thing
+async function updateLoginStreak(userId) {
+  await db.none(`
+      INSERT INTO user_stats (
+          user_id,
+          current_streak,
+          longest_streak,
+          last_login_date
+      )
+      SELECT
+          user_id,
+          1,
+          1,
+          (CURRENT_TIMESTAMP AT TIME ZONE timezone)::DATE
+      FROM users
+      WHERE user_id = $1
+
+      ON CONFLICT (user_id)
+      DO UPDATE SET
+
+          current_streak = CASE
+              WHEN user_stats.last_login_date = EXCLUDED.last_login_date
+                  THEN user_stats.current_streak
+
+              WHEN user_stats.last_login_date = EXCLUDED.last_login_date - 1
+                  THEN user_stats.current_streak + 1
+
+              ELSE 1
+          END,
+
+          longest_streak = GREATEST(
+              user_stats.longest_streak,
+              CASE
+                  WHEN user_stats.last_login_date = EXCLUDED.last_login_date
+                      THEN user_stats.current_streak
+
+                  WHEN user_stats.last_login_date = EXCLUDED.last_login_date - 1
+                      THEN user_stats.current_streak + 1
+
+                  ELSE 1
+              END
+          ),
+
+          last_login_date = EXCLUDED.last_login_date;
+  `, [userId]);
+}
+
+
 // *****************************************************
 // <!-- Section 5 : Start Server-->
 // *****************************************************
