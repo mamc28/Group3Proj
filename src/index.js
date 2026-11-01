@@ -140,6 +140,13 @@ app.post('/login', async (req, res) => {
         message: 'Incorrect username or password.', error: true,
       });
     }
+    //Updating login time for engagement stuff.
+    await db.none(
+      `UPDATE users
+       SET last_login = CURRENT_TIMESTAMP
+       WHERE user_id = $1`,
+      [user.user_id]
+    );
     req.session.regenerate(err => {
       if (err) return loginSessionError(res);
       req.session.user = { user_id: user.user_id, username: user.username };
