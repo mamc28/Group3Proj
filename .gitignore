@@ -4,5 +4,5 @@ node_modules/
 .DS_Store
 
 # Files for testing Cardset functionalities
-flashcards/test-cardsets.js
-flashcards/testData.txt
+ProjectSourceCode/flashcards/test-cardsets.js
+ProjectSourceCode/flashcards/testData.txt

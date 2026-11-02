@@ -1,5 +1,5 @@
 // Apply the saved theme before the stylesheet loads to avoid a flash of dark mode.
-(() => {
+(() => { // Immediately Invoked Function Expression - runs right away and saves on global variables
   let lightMode = false;
   try { lightMode = localStorage.getItem('scramble-theme') === 'light'; }
   catch (_) { /* Theme switching still works when browser storage is unavailable. */ }

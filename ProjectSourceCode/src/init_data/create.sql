@@ -6,7 +6,7 @@ CREATE TABLE users (
     email VARCHAR(100) UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
     timezone VARCHAR(100) DEFAULT 'UTC',
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     last_login TIMESTAMPTZ
 );
 
@@ -116,6 +116,7 @@ CREATE TABLE IF NOT EXISTS user_stats (
     current_streak INT DEFAULT 0,
     longest_streak INT DEFAULT 0,
     last_study_date DATE,
+    last_login_date DATE,
 
     FOREIGN KEY (user_id)
         REFERENCES users(user_id)
