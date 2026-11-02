@@ -63,8 +63,8 @@ export function reorderCard(cardset, cardId, index) {
 
     if (start === -1) throw new Error("Card not found");
 
-    const card = cardset.set.splice(start, 1)[0]; //remove & store card
-    cardset.cards.splice(index, 0, card); //insert card
+    const card = cardset.set.splice(start, 1)[0];  //remove & store card
+    cardset.cards.splice(index, 0, card);  //insert card
 }
 
 //Update the front of a Card in a Cardset
@@ -85,14 +85,29 @@ export function updateCardBack(cardset, cardId, back) {
     card.back = back;
 }
 
+//Returns the Card with cardId or null if that cardId isn't found within cardset
+export function findCard(cardset, cardId) {
+    return cardset.cards.find(card => card.id === cardId) ?? null;
+}
+
+//Returns a completely randomly shuffled version of the Cardset without changing the original
+export function shuffleCardset(cardset) {
+    const shuffled = [...cardset.cards];  //copy cardset.cards into shuffled so that the original isn't modified
+
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));  //get a random index in the array between 0 & i
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; //swap the card at i with the card at j
+    }
+
+    return {  //return the shuffled copy of the array (the cards within shuffled still reference the original card objects)
+        ...cardset,
+        cards: shuffled
+    }
+}
+
 //Local Functions:
 
 //Returns the index of the Card with cardId or -1 if that cardId isn't found within cardset
 function findCardIndex(cardset, cardId) {
     return cardset.cards.findIndex(card => card.id === cardId);
-}
-
-//Returns the Card with cardId or null if that cardId isn't found within cardset
-function findCard(cardset, cardId) {
-    return cardset.cards.find(card => card.id === cardId) ?? null;
 }
