@@ -19,3 +19,18 @@
     4) How is that going to link up
 
 ==MEETING 2 Monday November 2==
+
+
+Max -  Worked on homepage
+Travis - Abstraction for card objects
+Amelia - Worked on front end registration
+Eric -  Card shuffling logic (randomization) 
+Jackson - Did backend for login streaks
+
+General:
+Let’s make sure we check the planner to see who’s working on what so we don’t overlap work.
+
+Update the project board 
+
+Update the release notes too --- Lets automate this to use commit messages
+
