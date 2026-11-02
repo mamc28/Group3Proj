@@ -113,3 +113,9 @@
 .light-mode .password-toggle { color: #363659; }
 .light-mode .password-toggle:hover { background: #c2c6e3; color: #21213b; }
 .light-mode .password-toggle:focus-visible { outline-color: #505077; }
+
+/* "Don't have an account? Register" link under the login and register buttons. */
+.auth-switch { margin: 1.25rem 0 0; text-align: center; color: #c2c2d9; }
+.auth-switch a { color: #f4f3ff; font-weight: 600; }
+.light-mode .auth-switch { color: #363659; }
+.light-mode .auth-switch a { color: #21213b; }
