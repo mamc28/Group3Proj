@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS user_card_progress (
 
     FOREIGN KEY (card_id)
         REFERENCES flashcards(card_id)
-        ON DELETE CASCADE
+        ON DELETE CASCADE,
 
     UNIQUE (user_id, card_id),
     CHECK (confidence_level BETWEEN 0 AND 5)
