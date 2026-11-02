@@ -1,0 +1,7 @@
+Bugs/Issues that we should fix:
+
+1) Light/Dark mode only being on the register screen and not the login screen.
+
+2) Login currently isn't working. You can register an account, but then using the same login doesn't let you login.
+
+3)
