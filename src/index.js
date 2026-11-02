@@ -147,6 +147,8 @@ app.post('/login', async (req, res) => {
        WHERE user_id = $1`,
       [user.user_id]
     );
+    // Call streak function
+    await updateLoginStreak(user.user_id);
     req.session.regenerate(err => {
       if (err) return loginSessionError(res);
       req.session.user = { user_id: user.user_id, username: user.username };
