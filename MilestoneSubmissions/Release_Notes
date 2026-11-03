@@ -1,0 +1,36 @@
+
+Scramble — Release Notes
+Team: Group 3
+Repository: https://github.com/mamc28/Group3Proj
+Last reviewed: November 3, 2026
+
+This changelog summarizes changes on main grouped around weekly TA meetings. Committed code does not by itself confirm full UI integration or successful runtime tests.
+Week 2
+Team: Group 3
+Meeting date: November 2, 2026
+Changes covered: October 27–November 2, 2026
+Repository: https://github.com/mamc28/Group3Proj
+Summary
+Expanded Scramble from its initial project setup into an Express/Handlebars application with authentication routes, an initial dashboard, UI personalization, flashcard/card-set utility modules, and login activity tracking. Also updated the database/Docker setup and reorganized files to match the course's expected repository layout.
+Added: application and user interface
+- Set up the Node.js/Express server, Handlebars page templates, and PostgreSQL connection, building from the course's Lab 7 starter code.
+- Added registration, login, logout, and authenticated home-page routes; registration code uses bcrypt password hashing and login code uses session management.
+- Created a Scramble-branded dashboard layout with a sidebar, welcome message, exam-preparation banner, recent-set area, and card-set creation panel.
+- Styled the login and registration pages and introduced keyboard focus indicators to improve navigation accessibility.
+- Added light/dark theme switching, including a saved preference for subsequent visits.
+- Added show/hide password controls to the login and registration forms.
+- Added links between the login and registration pages.
+Added: study logic and data
+- Implemented reusable JavaScript functions for constructing, finding, editing, reordering, and removing cards and card sets.
+- Added shuffling logic that returns cards in a randomized order without altering the original set's order.
+- Added database fields for login timestamps and user statistics, plus server-side logic that updates current and longest login streaks when a user successfully authenticates.
+Fixes and maintenance
+- Adjusted the Docker Compose web-service working directory and corrected SQL schema punctuation.
+- Updated the database schema as application requirements evolved.
+- Added/updated .gitignore to exclude local environment files and generated dependencies.
+- Reorganized project files under ProjectSourceCode/, MilestoneSubmissions/, and TeamMeetingLogs/ for grading and maintenance; updated paths and README instructions.
+- Updated the second weekly meeting log.
+In progress / verification needed
+- The dashboard's Create new set button is still disabled in the current home.hbs template; Content, Progress, and Friends sidebar options are also labeled "coming soon." The card/card-set utility functions should not yet be described as a completed end-to-end UI workflow.
+- The repository's Issues2Fix file lists a problem logging in after registration and inconsistent availability of light/dark mode on the login screen. These are team-reported items, not independently confirmed current defects; re-test and close/update them if fixed.
+- End-to-end authentication, flashcard creation, deck persistence, and theme behavior have not been independently runtime-tested for these notes.
