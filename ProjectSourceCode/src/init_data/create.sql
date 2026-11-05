@@ -1,6 +1,6 @@
 -- 1. USERS
 -- Stores user accounts and login information
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     user_id SERIAL PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
@@ -9,6 +9,9 @@ CREATE TABLE users (
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     last_login TIMESTAMPTZ
 );
+
+ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS last_login TIMESTAMPTZ;
 
 --2. Decks
 -- Every user can create multiple flashcard decks
@@ -122,3 +125,6 @@ CREATE TABLE IF NOT EXISTS user_stats (
         REFERENCES users(user_id)
         ON DELETE CASCADE
 );
+
+ALTER TABLE user_stats
+    ADD COLUMN IF NOT EXISTS last_login_date DATE;
