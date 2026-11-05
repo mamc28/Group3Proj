@@ -12,7 +12,7 @@
         "pg-promise": "^12.6.1"
     },
     "scripts": {
-        "prestart": "npm install",
+        "prestart": "node index.js",
         "start": "nodemon index.js"
     }
 }
