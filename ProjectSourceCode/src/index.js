@@ -32,7 +32,7 @@ app.engine('hbs', hbs.engine);
 app.set('view engine', 'hbs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(bodyParser.json()); // specify the usage of JSON for parsing request body.
+app.use(bodyParser.json({ limit: '8mb' })); // specify the usage of JSON for parsing request body.
 
 // initialize session variables
 app.use(
@@ -46,6 +46,7 @@ app.use(
 app.use(
   bodyParser.urlencoded({
     extended: true,
+    limit: '8mb',
   })
 );
 

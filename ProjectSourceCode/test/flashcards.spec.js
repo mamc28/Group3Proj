@@ -12,6 +12,7 @@ describe('Manual flashcard creation', () => {
   let userId;
   let otherUserId;
   before(async () => {
+    await db.none(require('node:fs').readFileSync(require('node:path').join(__dirname, '../src/init_data/002_card_images.sql'), 'utf8'));
     const suffix = require('node:crypto').randomUUID();
     const hash = await bcrypt.hash('FlashcardPassword123!', 10);
     const user = await db.one(
@@ -79,6 +80,126 @@ describe('Manual flashcard creation', () => {
     const home = await agent.get('/home');
     expect(home.text).to.include(`/decks/${id}`);
     expect(home.text).to.include('2 cards');
+  });
+
+  it('saves image fronts and serves bytes only to their owner', async () => {
+    const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=';
+    const res = await agent.post('/decks').redirects(0).send({
+      title: 'Image set', cards: [{ frontType: 'image', image: `data:image/png;base64,${png}`,
+        question: '<script>alert(1)</script>', answer: 'A pixel' }],
+    });
+    expect(res).to.have.status(302);
+    const id = Number(res.headers.location.split('/').pop());
+    const card = await db.one('SELECT card_id, image_type FROM flashcards WHERE deck_id = $1', [id]);
+    expect(card.image_type).to.equal('image/png');
+    const image = await agent.get(`/decks/${id}/cards/${card.card_id}/image`);
+    expect(image).to.have.status(200);
+    expect(image.headers['content-type']).to.include('image/png');
+    expect(image.headers['x-content-type-options']).to.equal('nosniff');
+    expect(Buffer.compare(image.body, Buffer.from(png, 'base64'))).to.equal(0);
+    const view = await agent.get(res.headers.location);
+    expect(view.text).to.include('&lt;script&gt;');
+    expect(view.text).not.to.include('<script>alert(1)</script>');
+    const other = await db.one('INSERT INTO decks(user_id, title) VALUES($1, $2) RETURNING deck_id', [otherUserId, 'Other']);
+    await db.none('UPDATE decks SET user_id = $1 WHERE deck_id = $2', [otherUserId, id]);
+    expect(await agent.get(`/decks/${id}/cards/${card.card_id}/image`)).to.have.status(404);
+    expect(await agent.get(`/decks/${other.deck_id}/cards/${card.card_id}/image`)).to.have.status(404);
+  });
+
+  it('preserves mixed front types and displays image + text prompts safely', async () => {
+    const image = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=';
+    const res = await agent.post('/decks').redirects(0).send({
+      title: 'Mixed cards', cards: [
+        { frontType: 'text', question: 'Text question', answer: 'Text answer' },
+        { frontType: 'image', image, question: 'Image description only', answer: 'Image answer' },
+        { frontType: 'image-text', image, question: '<img src=x onerror=alert(1)> Identify this', answer: 'Combined answer' },
+      ],
+    });
+    expect(res).to.have.status(302);
+    const id = Number(res.headers.location.split('/').pop());
+    const cards = await db.any('SELECT front_type FROM flashcards WHERE deck_id = $1 ORDER BY card_id', [id]);
+    expect(cards.map(card => card.front_type)).to.deep.equal(['text', 'image', 'image-text']);
+    const view = await agent.get(res.headers.location);
+    expect(view.text).to.include(`<p class="card-text">${require('handlebars').escapeExpression('<img src=x onerror=alert(1)> Identify this')}</p>`);
+    expect(view.text).not.to.include('<img src=x onerror=alert(1)>');
+    expect(view.text).not.to.include('<p class="card-text">Image description only</p>');
+    expect(view.text).to.include('<p class="card-text">Text question</p>');
+    const invalid = await agent.post('/decks').send({
+      title: 'Incomplete', cards: [{ frontType: 'image-text', image, question: 'Keep prompt', answer: '' }],
+    });
+    expect(invalid).to.have.status(400);
+    expect(invalid.text).to.include('value="image-text" selected');
+    expect(invalid.text).to.include('Keep prompt</textarea>');
+    const missing = await agent.post('/decks').send({
+      title: 'Missing prompt', cards: [{ frontType: 'image-text', image, question: ' ', answer: 'Answer' }],
+    });
+    expect(missing).to.have.status(400);
+  });
+
+  it('saves distinct images on both sides and protects the back image', async () => {
+    const front = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=';
+    const back = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+    const card = { frontType: 'image-both', image: front, backImage: back,
+      question: 'Front diagram', answer: '<script>alert(1)</script>' };
+    const res = await agent.post('/decks').redirects(0).send({ title: 'Both sides', cards: [card] });
+    expect(res).to.have.status(302);
+    const id = Number(res.headers.location.split('/').pop());
+    const stored = await db.one('SELECT card_id, front_type FROM flashcards WHERE deck_id = $1', [id]);
+    expect(stored.front_type).to.equal('image-both');
+    for (const [route, data] of [['image', front], ['back-image', back]]) {
+      const image = await agent.get(`/decks/${id}/cards/${stored.card_id}/${route}`);
+      expect(image).to.have.status(200);
+      expect(image.headers['content-type']).to.include('image/png');
+      expect(image.headers['x-content-type-options']).to.equal('nosniff');
+      expect(Buffer.compare(image.body, Buffer.from(data.split(',')[1], 'base64'))).to.equal(0);
+    }
+    const view = await agent.get(res.headers.location);
+    expect(view.text).to.include(`/cards/${stored.card_id}/back-image`);
+    expect(view.text).to.include('alt="&lt;script&gt;alert(1)&lt;/script&gt;"');
+    expect(view.text).to.include('<p class="card-text">Front diagram</p>');
+    expect(view.text).to.include('<p class="card-text">&lt;script&gt;alert(1)&lt;/script&gt;</p>');
+    expect(view.text).not.to.include('<script>alert(1)</script>');
+    const incomplete = await agent.post('/decks').send({ title: 'Incomplete', cards: [{ ...card, answer: '' }] });
+    expect(incomplete).to.have.status(400);
+    expect(incomplete.text).to.include('value="image-both" selected');
+    expect(incomplete.text).to.include(`value="${require('handlebars').escapeExpression(back)}"`);
+    await db.none('UPDATE decks SET user_id = $1 WHERE deck_id = $2', [otherUserId, id]);
+    expect(await agent.get(`/decks/${id}/cards/${stored.card_id}/back-image`)).to.have.status(404);
+    expect(await chai.request(app).get(`/decks/${id}/cards/${stored.card_id}/back-image`).redirects(0))
+      .to.have.header('location', '/login');
+  });
+
+  it('rejects missing, oversized, and script-bearing back images without saving a deck', async () => {
+    const front = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=';
+    const payload = Buffer.from('<svg onload="alert(1)"></svg>').toString('base64');
+    const before = await db.one('SELECT COUNT(*)::int AS count FROM decks WHERE user_id = $1', [userId]);
+    for (const backImage of ['', 'javascript:alert(1)', `data:image/svg+xml;base64,${payload}`,
+      `data:image/png;base64,${payload}`, `data:image/png;base64,${Buffer.alloc(2 * 1024 * 1024 + 1).toString('base64')}`]) {
+      const res = await agent.post('/decks').send({ title: 'Invalid back', cards: [{
+        frontType: 'image-both', image: front, backImage, question: 'Front', answer: 'Back description',
+      }] });
+      expect(res).to.have.status(400);
+      expect(res.text).not.to.include('src="javascript:');
+      expect(res.text).not.to.include('src="data:image/svg');
+    }
+    const after = await db.one('SELECT COUNT(*)::int AS count FROM decks WHERE user_id = $1', [userId]);
+    expect(after.count).to.equal(before.count);
+  });
+
+  it('rejects script-bearing formats, spoofed MIME types, missing and oversized images', async () => {
+    const payload = Buffer.from('<svg onload="alert(1)"></svg>').toString('base64');
+    const before = await db.one('SELECT COUNT(*)::int AS count FROM decks WHERE user_id = $1', [userId]);
+    for (const image of [`data:image/svg+xml;base64,${payload}`, `data:image/png;base64,${payload}`,
+      'javascript:alert(1)', '', `data:image/png;base64,${Buffer.alloc(2 * 1024 * 1024 + 1).toString('base64')}`]) {
+      const res = await agent.post('/decks').send({ title: 'Unsafe image', cards: [
+        { frontType: 'image', image, question: 'Diagram', answer: 'Answer' },
+      ] });
+      expect(res).to.have.status(400);
+      expect(res.text).not.to.include('src="javascript:');
+      expect(res.text).not.to.include('src="data:image/svg');
+    }
+    const after = await db.one('SELECT COUNT(*)::int AS count FROM decks WHERE user_id = $1', [userId]);
+    expect(after.count).to.equal(before.count);
   });
 
   it('rejects invalid input without saving a partial set and preserves entered text', async () => {

@@ -159,3 +159,8 @@ html:has(.set-dialog[open]) { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) {
   .set-dialog[open], .set-dialog[open]::backdrop { animation: none; }
 }
+
+.card-image-preview { display: block; max-width: 100%; max-height: 360px; object-fit: contain; margin: 0 0 1rem; }
+.card-image-preview[hidden], .card-image-fields[hidden] { display: none; }
+.card-image-error { color: #ffb4b4; }
+.light-mode .card-image-error { color: #9b1c1c; }

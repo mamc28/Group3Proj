@@ -22,7 +22,8 @@ Wireframe:
 
 From the repository root, run `docker compose up`. The Compose configuration starts
 the application from `ProjectSourceCode/src` and initializes the database from
-`ProjectSourceCode/src/init_data`.
+`ProjectSourceCode/src/init_data`. It installs the application workspace
+dependencies into a persistent Docker volume before starting the server.
 
 ## Running tests
 

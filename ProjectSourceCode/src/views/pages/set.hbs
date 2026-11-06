@@ -6,9 +6,19 @@
   {{#each cards}}
     <article class="dashboard-card">
       <h2 class="card-heading">Question</h2>
-      <p class="card-text">{{question}}</p>
+      {{#if image_type}}
+        <img class="card-image-preview" src="/decks/{{../deck_id}}/cards/{{card_id}}/image" alt="{{question}}">
+        {{#if showFrontText}}<p class="card-text">{{question}}</p>{{/if}}
+      {{else}}
+        <p class="card-text">{{question}}</p>
+      {{/if}}
       <h2 class="card-heading">Answer</h2>
-      <p class="card-text">{{answer}}</p>
+      {{#if back_image_type}}
+        <img class="card-image-preview" src="/decks/{{../deck_id}}/cards/{{card_id}}/back-image" alt="{{answer}}">
+        <p class="card-text">{{answer}}</p>
+      {{else}}
+        <p class="card-text">{{answer}}</p>
+      {{/if}}
     </article>
   {{/each}}
   <a href="/decks/new">Create another set</a>
