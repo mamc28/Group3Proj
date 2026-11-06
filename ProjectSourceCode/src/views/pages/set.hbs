@@ -3,6 +3,11 @@
   <h1>{{title}}</h1>
   <p class="card-description">{{description}}</p>
   <p>{{cards.length}} cards</p>
+  <nav class="set-actions" aria-label="Manage this set">
+    <a class="create-button" href="/decks/{{deck_id}}/edit">Edit set</a>
+    <a class="create-button" href="/decks/{{deck_id}}/rename">Rename</a>
+    <a class="create-button danger-button" href="/decks/{{deck_id}}/delete">Delete set</a>
+  </nav>
   {{#each cards}}
     <article class="dashboard-card">
       <h2 class="card-heading">Question</h2>

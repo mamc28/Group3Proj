@@ -223,6 +223,108 @@ describe('Manual flashcard creation', () => {
     expect(after.count).to.equal(before.count);
   });
 
+  async function managementToken(path) {
+    const res = await agent.get(path);
+    expect(res).to.have.status(200);
+    return /name="csrfToken" value="([a-f0-9]+)"/.exec(res.text)[1];
+  }
+
+  async function makeManagedSet(owner = userId) {
+    const deck = await db.one('INSERT INTO decks(user_id, title, description) VALUES($1, $2, $3) RETURNING deck_id',
+      [owner, 'Manage me', 'Original description']);
+    const card = await db.one('INSERT INTO flashcards(deck_id, question, answer) VALUES($1, $2, $3) RETURNING card_id',
+      [deck.deck_id, 'Original front', 'Original back']);
+    return { ...deck, ...card };
+  }
+
+  it('edits a set while keeping existing card progress and removing omitted cards', async () => {
+    const { deck_id, card_id } = await makeManagedSet();
+    const removed = await db.one('INSERT INTO flashcards(deck_id, question, answer) VALUES($1, $2, $3) RETURNING card_id',
+      [deck_id, 'Remove this', 'Old answer']);
+    await db.none('INSERT INTO user_card_progress(user_id, card_id, times_reviewed) VALUES($1, $2, 3)', [userId, card_id]);
+    const csrfToken = await managementToken(`/decks/${deck_id}/edit`);
+    const res = await agent.post(`/decks/${deck_id}/edit`).redirects(0).type('form').send({
+      csrfToken, title: 'Edited title', description: 'Edited description',
+      'cards[0][card_id]': String(card_id), 'cards[0][question]': 'Edited front', 'cards[0][answer]': 'Edited answer',
+      'cards[1][question]': 'New front', 'cards[1][answer]': 'New answer',
+    });
+    expect(res).to.have.header('location', `/decks/${deck_id}`);
+    const deck = await db.one('SELECT title, description FROM decks WHERE deck_id = $1', [deck_id]);
+    expect(deck).to.deep.equal({ title: 'Edited title', description: 'Edited description' });
+    const cards = await db.any('SELECT card_id, question FROM flashcards WHERE deck_id = $1 ORDER BY card_id', [deck_id]);
+    expect(cards).to.have.lengthOf(2);
+    expect(cards[0]).to.deep.equal({ card_id, question: 'Edited front' });
+    expect(cards[1].question).to.equal('New front');
+    expect(await db.oneOrNone('SELECT card_id FROM flashcards WHERE card_id = $1', [removed.card_id])).to.equal(null);
+    expect((await db.one('SELECT times_reviewed FROM user_card_progress WHERE card_id = $1', [card_id])).times_reviewed).to.equal(3);
+  });
+
+  it('preserves image fronts and backs when reopening and saving an existing set', async () => {
+    const image = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=';
+    const created = await agent.post('/decks').redirects(0).send({ title: 'Editable images', cards: [
+      { frontType: 'image-both', image, backImage: image, question: 'Front', answer: 'Back' },
+    ] });
+    const id = Number(created.headers.location.split('/').pop());
+    const card = await db.one('SELECT card_id FROM flashcards WHERE deck_id = $1', [id]);
+    const edit = await agent.get(`/decks/${id}/edit`);
+    expect(edit.text).to.include('value="image-both" selected');
+    expect(edit.text).to.include(`value="${require('handlebars').escapeExpression(image)}"`);
+    const csrfToken = await managementToken(`/decks/${id}/edit`);
+    const res = await agent.post(`/decks/${id}/edit`).redirects(0).send({ csrfToken, title: 'Images renamed', cards: [
+      { card_id: String(card.card_id), frontType: 'image-both', image, backImage: image, question: 'Changed', answer: 'Back' },
+    ] });
+    expect(res).to.have.status(302);
+    const saved = await db.one('SELECT image_data, back_image_data FROM flashcards WHERE card_id = $1', [card.card_id]);
+    expect(saved.image_data.equals(saved.back_image_data)).to.equal(true);
+    expect(saved.image_data.equals(Buffer.from(image.split(',')[1], 'base64'))).to.equal(true);
+  });
+
+  it('renames sets without changing their cards and validates names', async () => {
+    const { deck_id, card_id } = await makeManagedSet();
+    const csrfToken = await managementToken(`/decks/${deck_id}/rename`);
+    const invalid = await agent.post(`/decks/${deck_id}/rename`).send({ csrfToken, title: '  ' });
+    expect(invalid).to.have.status(400);
+    const renamed = await agent.post(`/decks/${deck_id}/rename`).redirects(0).send({ csrfToken, title: ' New name ' });
+    expect(renamed).to.have.status(302);
+    expect((await db.one('SELECT title FROM decks WHERE deck_id = $1', [deck_id])).title).to.equal('New name');
+    expect((await db.one('SELECT question FROM flashcards WHERE card_id = $1', [card_id])).question).to.equal('Original front');
+  });
+
+  it('requires confirmation before deleting and cascades card and progress removal', async () => {
+    const { deck_id, card_id } = await makeManagedSet();
+    await db.none('INSERT INTO user_card_progress(user_id, card_id) VALUES($1, $2)', [userId, card_id]);
+    const csrfToken = await managementToken(`/decks/${deck_id}/delete`);
+    expect(await db.oneOrNone('SELECT deck_id FROM decks WHERE deck_id = $1', [deck_id])).not.to.equal(null);
+    const res = await agent.post(`/decks/${deck_id}/delete`).redirects(0).send({ csrfToken });
+    expect(res).to.have.header('location', '/home');
+    expect(await db.oneOrNone('SELECT deck_id FROM decks WHERE deck_id = $1', [deck_id])).to.equal(null);
+    expect(await db.oneOrNone('SELECT card_id FROM flashcards WHERE card_id = $1', [card_id])).to.equal(null);
+    expect(await db.oneOrNone('SELECT card_id FROM user_card_progress WHERE card_id = $1', [card_id])).to.equal(null);
+  });
+
+  it('blocks unauthorized changes, forged forms, and cards belonging to another set', async () => {
+    const own = await makeManagedSet();
+    const other = await makeManagedSet(otherUserId);
+    const csrfToken = await managementToken(`/decks/${own.deck_id}/edit`);
+    for (const action of ['edit', 'rename', 'delete']) {
+      expect(await agent.get(`/decks/${other.deck_id}/${action}`)).to.have.status(404);
+      expect(await agent.post(`/decks/${other.deck_id}/${action}`).send({ csrfToken })).to.have.status(404);
+      expect(await agent.post(`/decks/${own.deck_id}/${action}`).send({})).to.have.status(403);
+      const anonymous = await chai.request(app).post(`/decks/${own.deck_id}/${action}`).redirects(0).send({});
+      expect(anonymous).to.have.header('location', '/login');
+    }
+    for (const cards of [
+      [{ card_id: String(other.card_id), question: 'Stolen', answer: 'Bad' }],
+      [{ card_id: String(own.card_id), question: 'Duplicate', answer: 'Bad' }, { card_id: String(own.card_id), question: 'Duplicate', answer: 'Bad' }],
+      [{ card_id: String(own.card_id), question: '', answer: 'Bad' }],
+    ]) {
+      const res = await agent.post(`/decks/${own.deck_id}/edit`).send({ csrfToken, title: 'Should not save', cards });
+      expect(res).to.have.status(400);
+    }
+    expect((await db.one('SELECT title FROM decks WHERE deck_id = $1', [own.deck_id])).title).to.equal('Manage me');
+    expect((await db.one('SELECT question FROM flashcards WHERE card_id = $1', [own.card_id])).question).to.equal('Original front');
+  });
+
   it('does not expose another user’s sets', async () => {
     const deck = await db.one(
       'INSERT INTO decks(user_id, title) VALUES($1, $2) RETURNING deck_id', [otherUserId, 'Private set']

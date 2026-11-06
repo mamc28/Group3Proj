@@ -43,6 +43,11 @@
       <article class="recent-set">
         <h3 class="card-title"><a href="/decks/{{deck_id}}">{{name}}</a></h3>
         <p class="card-description">{{cardCount}} cards</p>
+        <nav class="set-actions" aria-label="Manage {{name}}">
+          <a href="/decks/{{deck_id}}/edit">Edit</a>
+          <a href="/decks/{{deck_id}}/rename">Rename</a>
+          <a class="danger-link" href="/decks/{{deck_id}}/delete">Delete</a>
+        </nav>
       </article>
     {{else}}
       <p class="card-description">Your saved flashcard sets will appear here.</p>

@@ -164,3 +164,16 @@ html:has(.set-dialog[open]) { overflow: hidden; }
 .card-image-preview[hidden], .card-image-fields[hidden] { display: none; }
 .card-image-error { color: #ffb4b4; }
 .light-mode .card-image-error { color: #9b1c1c; }
+
+/* Set management controls and a brighter create action. */
+.set-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; }
+.set-actions .create-button { margin: 0; }
+.recent-set .set-actions a { color: inherit; }
+.set-actions .danger-button, .recent-set .set-actions .danger-link { color: #ffb4b4; }
+.set-actions .danger-button { border-color: #b9656b; cursor: pointer; }
+.light-mode .set-actions .danger-button, .light-mode .recent-set .set-actions .danger-link { color: #9b1c1c; }
+#open-create-set { background: #7770d9; border-color: #a39cf7; color: #fff; box-shadow: 0 0 0 3px rgb(163 156 247 / 14%); transition: background-color 150ms ease, box-shadow 150ms ease; }
+#open-create-set:hover { background: #655cc6; box-shadow: 0 0 0 5px rgb(163 156 247 / 22%); }
+.light-mode #open-create-set { background: #5f52b5; border-color: #5f52b5; color: #fff; }
+.light-mode #open-create-set:hover { background: #50449e; }
+@media (prefers-reduced-motion: reduce) { #open-create-set { transition: none; } }

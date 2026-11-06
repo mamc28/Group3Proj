@@ -7,6 +7,7 @@
     const cards = [...container.children];
     cards.forEach((card, index) => {
       card.querySelector('.card-number').textContent = index + 1;
+      card.querySelector('.card-id').name = `cards[${index}][card_id]`;
       card.querySelector('.card-question').name = `cards[${index}][question]`;
       card.querySelector('.card-front-type').name = `cards[${index}][frontType]`;
       card.querySelector('.card-image-data').name = `cards[${index}][image]`;
@@ -21,6 +22,7 @@
   add.addEventListener('click', () => {
     if (container.children.length >= 100) return;
     const card = container.firstElementChild.cloneNode(true);
+    card.querySelector('.card-id').value = '';
     card.querySelectorAll('textarea').forEach(input => { input.value = ''; });
     card.querySelector('.card-front-type').value = 'text';
     card.querySelectorAll('.card-image-fields').forEach(group => {

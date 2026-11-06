@@ -1,8 +1,9 @@
 <main class="set-content">
   <a href="/home">Back to Home</a>
-  <h1>Create a flashcard set</h1>
+  <h1>{{#if isEditing}}Edit flashcard set{{else}}Create a flashcard set{{/if}}</h1>
   {{> message}}
-  <form action="/decks" method="post" id="create-set-form">
+  <form action="{{#if isEditing}}/decks/{{deck_id}}/edit{{else}}/decks{{/if}}" method="post" id="create-set-form">
+    <input type="hidden" name="csrfToken" value="{{csrfToken}}">
     <label class="field-label" for="set-title">Title</label>
     <input class="field-input" id="set-title" name="title" value="{{title}}" maxlength="100" required>
     <label class="field-label" for="set-description">Description (optional)</label>
@@ -14,6 +15,7 @@
       {{#each cards}}
       <fieldset class="dashboard-card card-fields">
         <legend>Card <span class="card-number"></span></legend>
+        <input class="card-id" type="hidden" name="cards[{{@index}}][card_id]" value="{{card_id}}">
         <label class="field-label">Card type
           <select class="field-input card-front-type" name="cards[{{@index}}][frontType]">
             <option value="text">Text</option>
@@ -49,7 +51,7 @@
       {{/each}}
     </div>
     <button class="create-button" id="add-card" type="button" hidden>Add card</button>
-    <button class="submit-button" type="submit">Save set</button>
+    <button class="submit-button" type="submit">{{#if isEditing}}Save changes{{else}}Save set{{/if}}</button>
   </form>
 </main>
 <script src="/js/create-set.js" defer></script>
