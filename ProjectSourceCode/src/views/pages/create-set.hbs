@@ -1,0 +1,29 @@
+<main class="set-content">
+  <a href="/home">Back to Home</a>
+  <h1>Create a flashcard set</h1>
+  {{> message}}
+  <form action="/decks" method="post" id="create-set-form">
+    <label class="field-label" for="set-title">Title</label>
+    <input class="field-input" id="set-title" name="title" value="{{title}}" maxlength="100" required>
+    <label class="field-label" for="set-description">Description (optional)</label>
+    <textarea class="field-input" id="set-description" name="description" rows="2">{{description}}</textarea>
+    <p>Enter a question and answer for each card. You can add up to 100 cards.</p>
+    <div id="card-fields">
+      {{#each cards}}
+      <fieldset class="dashboard-card card-fields">
+        <legend>Card <span class="card-number"></span></legend>
+        <label class="field-label">Front
+          <textarea class="field-input card-question" name="cards[{{@index}}][question]" rows="3" required>{{question}}</textarea>
+        </label>
+        <label class="field-label">Back
+          <textarea class="field-input card-answer" name="cards[{{@index}}][answer]" rows="3" required>{{answer}}</textarea>
+        </label>
+        <button class="create-button remove-card" type="button" hidden>Remove card</button>
+      </fieldset>
+      {{/each}}
+    </div>
+    <button class="create-button" id="add-card" type="button" hidden>Add card</button>
+    <button class="submit-button" type="submit">Save set</button>
+  </form>
+</main>
+<script src="/js/create-set.js" defer></script>

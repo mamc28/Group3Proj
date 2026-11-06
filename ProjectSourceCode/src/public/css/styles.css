@@ -119,3 +119,43 @@
 .auth-switch a { color: #f4f3ff; font-weight: 600; }
 .light-mode .auth-switch { color: #363659; }
 .light-mode .auth-switch a { color: #21213b; }
+
+/* Manual flashcard creation and saved sets. */
+.set-content { width: min(800px, 100%); box-sizing: border-box; padding: 2rem 1.5rem; margin: 0 auto; }
+.set-content a, .recent-set a { color: inherit; }
+.set-content h1 { margin: 1.5rem 0; overflow-wrap: anywhere; }
+.set-content .create-button, a.create-button { display: inline-block; cursor: pointer; text-decoration: none; margin: 0 0 1.5rem; }
+.create-button:disabled { cursor: not-allowed; opacity: .6; }
+.card-fields { min-width: 0; }
+.card-fields legend { float: none; width: auto; padding: 0 .5rem; font-size: 1.15rem; }
+.card-fields textarea { resize: vertical; }
+.card-text, .set-content .card-description { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.set-dialog { box-sizing: border-box; width: min(520px, calc(100% - 2rem)); max-height: calc(100dvh - 2rem); overflow-y: auto; padding: 2rem; border: 1px solid #505077; border-radius: 1rem; background: #21213b; color: #f4f3ff; }
+.set-dialog::backdrop { background: rgb(0 0 0 / 65%); }
+.set-dialog h2 { margin: 0 0 .75rem; }
+.set-dialog textarea { resize: vertical; }
+.set-dialog-actions { display: flex; justify-content: flex-end; align-items: center; flex-wrap: wrap; gap: .75rem; }
+.set-dialog-actions .create-button { margin: 0; cursor: pointer; }
+.set-dialog-actions .submit-button { width: auto; }
+.light-mode .set-dialog { background: #d0ddec; border-color: #9195b0; color: #21213b; }
+html:has(.set-dialog[open]) { overflow: hidden; }
+
+/* Keep the dialog in the top layer until its exit animation finishes. */
+.set-dialog[open] { animation: set-dialog-in 220ms cubic-bezier(.2, .8, .2, 1) both; }
+.set-dialog[open]::backdrop { animation: set-backdrop-in 220ms ease-out both; }
+.set-dialog[open].is-closing { animation: set-dialog-out 160ms ease-in both; pointer-events: none; }
+.set-dialog[open].is-closing::backdrop { animation: set-backdrop-out 160ms ease-in both; }
+@keyframes set-dialog-in {
+  from { opacity: 0; transform: translateY(16px) scale(.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes set-dialog-out {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(10px) scale(.98); }
+}
+@keyframes set-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes set-backdrop-out { from { opacity: 1; } to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .set-dialog[open], .set-dialog[open]::backdrop { animation: none; }
+}

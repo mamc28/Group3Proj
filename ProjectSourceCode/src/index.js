@@ -6,10 +6,11 @@ const express = require('express'); // To build an application server or API
 const app = express();
 const handlebars = require('express-handlebars'); //to enable express to work with handlebars
 const path = require('path');
-const pgp = require('pg-promise')(); // To connect to the Postgres DB from the node server
 const bodyParser = require('body-parser');
 const session = require('express-session'); // To set the session object. To store or access session data, use the `req.session`, which is (generally) serialized as JSON by the store.
 const bcrypt = require('bcryptjs'); //  To hash passwords
+const { db } = require('./db');
+const flashcardRoutes = require('./flashcardRoutes');
 
 // *****************************************************
 // <!-- Section 2 : Connect to DB -->
@@ -21,27 +22,6 @@ const hbs = handlebars.create({
   layoutsDir: __dirname + '/views/layouts',
   partialsDir: __dirname + '/views/partials',
 });
-
-// database configuration
-const dbConfig = {
-  host: 'db', // the database server
-  port: 5432, // the database port
-  database: process.env.POSTGRES_DB, // the database name
-  user: process.env.POSTGRES_USER, // the user account to connect with
-  password: process.env.POSTGRES_PASSWORD, // the password of the user account
-};
-
-const db = pgp(dbConfig);
-
-// test your database
-db.connect()
-  .then(obj => {
-    console.log('Database connection successful'); // you can view this message in the docker compose logs
-    obj.done(); // success, release the connection;
-  })
-  .catch(error => {
-    console.log('ERROR:', error.message || error);
-  });
 
 // *****************************************************
 // <!-- Section 3 : App Settings -->
@@ -87,11 +67,23 @@ app.get('/', (req, res) => {
 app.get('/register', (req, res) => {
   res.render('pages/register');
 });
-app.get('/home', auth, (req, res) => {
-  res.render('pages/home', {
-    isHome: true,
-    username: req.session.user.username,
-  });
+app.use('/decks', auth, flashcardRoutes);
+app.get('/home', auth, async (req, res) => {
+  try {
+    const recentSets = await db.any(
+      `SELECT d.deck_id, d.title AS name, COUNT(f.card_id)::int AS "cardCount"
+       FROM decks d LEFT JOIN flashcards f ON f.deck_id = d.deck_id
+       WHERE d.user_id = $1 GROUP BY d.deck_id ORDER BY d.created_at DESC, d.deck_id DESC`,
+      [req.session.user.user_id]
+    );
+    res.render('pages/home', { isHome: true, username: req.session.user.username, recentSets });
+  } catch (error) {
+    console.error('Unable to load sets:', error.code);
+    res.status(500).render('pages/home', {
+      isHome: true, username: req.session.user.username,
+      message: 'Unable to load your sets. Please try again.', error: true,
+    });
+  }
 });
 app.post('/register', async (req, res) => {
   const { username, email, password } = req.body;
@@ -235,5 +227,10 @@ async function updateLoginStreak(userId) {
 // <!-- Section 5 : Start Server-->
 // *****************************************************
 // starting the server and keeping the connection open to listen for more requests
-app.listen(3000);
-console.log('Server is listening on port 3000');
+if (require.main === module) {
+  app.listen(3000, () => {
+    console.log('Server is listening on port 3000');
+  });
+}
+
+module.exports = app;

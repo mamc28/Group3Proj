@@ -34,19 +34,34 @@
     <h2 class="card-heading" id="create-heading">Create something new</h2>
     <h3 class="card-title">Big ideas, bite-sized cards.</h3>
     <p class="card-description">Build a flashcard set and make it stick.</p>
-    <button class="create-button" type="button" disabled>Create new set</button>
-    <p class="card-description">Set creation is coming soon.</p>
+    <a class="create-button" id="open-create-set" href="/decks/new" aria-haspopup="dialog">Create new set</a>
   </section>
 
   <section class="dashboard-card" aria-labelledby="recent-heading">
-    <h2 class="card-heading" id="recent-heading">Recently used</h2>
+    <h2 class="card-heading" id="recent-heading">Your sets</h2>
     {{#each recentSets}}
       <article class="recent-set">
-        <h3 class="card-title">{{name}}</h3>
+        <h3 class="card-title"><a href="/decks/{{deck_id}}">{{name}}</a></h3>
         <p class="card-description">{{cardCount}} cards</p>
       </article>
     {{else}}
-      <p class="card-description">Once you start studying, your recent sets will appear here.</p>
+      <p class="card-description">Your saved flashcard sets will appear here.</p>
     {{/each}}
   </section>
 </main>
+
+<dialog class="set-dialog" id="new-set-dialog" aria-labelledby="new-set-heading">
+  <form action="/decks/new" method="post" id="new-set-details">
+    <h2 id="new-set-heading">Create a new set</h2>
+    <p class="card-description">Give your set a name, then start adding cards.</p>
+    <label class="field-label" for="new-set-title">Name</label>
+    <input class="field-input" id="new-set-title" name="title" maxlength="100" required autofocus>
+    <label class="field-label" for="new-set-description">Description (optional)</label>
+    <textarea class="field-input" id="new-set-description" name="description" rows="3"></textarea>
+    <div class="set-dialog-actions">
+      <button class="create-button" id="cancel-create-set" type="button">Cancel</button>
+      <button class="submit-button" type="submit">Continue to cards</button>
+    </div>
+  </form>
+</dialog>
+<script src="/js/new-set-dialog.js" defer></script>

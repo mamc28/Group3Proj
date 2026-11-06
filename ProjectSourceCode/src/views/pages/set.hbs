@@ -1,0 +1,15 @@
+<main class="set-content">
+  <a href="/home">Back to Home</a>
+  <h1>{{title}}</h1>
+  <p class="card-description">{{description}}</p>
+  <p>{{cards.length}} cards</p>
+  {{#each cards}}
+    <article class="dashboard-card">
+      <h2 class="card-heading">Question</h2>
+      <p class="card-text">{{question}}</p>
+      <h2 class="card-heading">Answer</h2>
+      <p class="card-text">{{answer}}</p>
+    </article>
+  {{/each}}
+  <a href="/decks/new">Create another set</a>
+</main>
