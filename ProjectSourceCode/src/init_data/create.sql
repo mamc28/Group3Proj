@@ -128,3 +128,17 @@ CREATE TABLE IF NOT EXISTS user_stats (
 
 ALTER TABLE user_stats
     ADD COLUMN IF NOT EXISTS last_login_date DATE;
+
+
+-- 8. Friendships
+-- One row per friend a user has added. Adding is instant (no requests).
+CREATE TABLE IF NOT EXISTS friendships (
+    user_id INT NOT NULL,
+    friend_id INT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (user_id, friend_id),
+    CHECK (user_id <> friend_id),
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (friend_id) REFERENCES users(user_id) ON DELETE CASCADE
+);

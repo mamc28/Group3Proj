@@ -183,6 +183,83 @@ app.get('/logout', (req, res) => {
     });
 });
 
+// Friends page: search users by username and list the user's friends.
+app.get('/friends', auth, async (req, res) => {
+  const userId = req.session.user.user_id;
+  const search = (req.query.search || '').trim();
+
+  try {
+    const friends = await db.any(
+      `SELECT users.user_id, users.username
+       FROM friendships
+       JOIN users ON users.user_id = friendships.friend_id
+       WHERE friendships.user_id = $1
+       ORDER BY users.username`,
+      [userId]
+    );
+
+    // Only search when something was typed. Leaves out yourself and people already added.
+    let results = [];
+    if (search) {
+      results = await db.any(
+        `SELECT user_id, username
+         FROM users
+         WHERE username ILIKE $1
+           AND user_id <> $2
+           AND user_id NOT IN (SELECT friend_id FROM friendships WHERE user_id = $2)
+         ORDER BY username
+         LIMIT 10`,
+        ['%' + search + '%', userId]
+      );
+    }
+
+    res.render('pages/friends', {
+      isHome: true, // uses the same dashboard layout as the home page
+      username: req.session.user.username,
+      search,
+      searched: search !== '',
+      results,
+      friends,
+    });
+  } catch (error) {
+    console.error('Friends page failed:', error.code);
+    res.render('pages/friends', {
+      isHome: true,
+      username: req.session.user.username,
+      message: 'Unable to load friends. Please try again later.',
+      error: true,
+    });
+  }
+});
+
+// Add a friend from the search results.
+app.post('/friends/add', auth, async (req, res) => {
+  try {
+    await db.none(
+      `INSERT INTO friendships (user_id, friend_id)
+       VALUES ($1, $2)
+       ON CONFLICT DO NOTHING`,
+      [req.session.user.user_id, req.body.friend_id]
+    );
+  } catch (error) {
+    console.error('Add friend failed:', error.code);
+  }
+  res.redirect('/friends');
+});
+
+// Remove a friend from the list.
+app.post('/friends/remove', auth, async (req, res) => {
+  try {
+    await db.none(
+      'DELETE FROM friendships WHERE user_id = $1 AND friend_id = $2',
+      [req.session.user.user_id, req.body.friend_id]
+    );
+  } catch (error) {
+    console.error('Remove friend failed:', error.code);
+  }
+  res.redirect('/friends');
+});
+
 /// Separate function to update streak; didn't want to nest this whole thing
 async function updateLoginStreak(userId) {
   await db.none(`

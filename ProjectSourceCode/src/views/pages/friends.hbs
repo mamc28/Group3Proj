@@ -1,0 +1,61 @@
+<header class="sidebar">
+  <a class="brand" href="/home">scramble.</a>
+  <p class="sidebar-description">{{username}} — Your study space</p>
+  <nav aria-label="Main navigation">
+    <ul class="navigation-list">
+      <li><a class="navigation-item" href="/home">Home</a></li>
+      <li><button class="navigation-item navigation-placeholder" type="button" disabled>Content (coming soon)</button></li>
+      <li><button class="navigation-item navigation-placeholder" type="button" disabled>Progress (coming soon)</button></li>
+      <li><a class="navigation-item navigation-active" href="/friends" aria-current="page">Friends</a></li>
+    </ul>
+    <a class="logout-link" href="/logout">Log out</a>
+  </nav>
+  <div class="sidebar-theme-control">{{> theme-toggle}}</div>
+</header>
+
+<main class="dashboard-content" id="main-content">
+  {{> message}}
+  <h1 class="welcome-heading">Friends</h1>
+
+  <section class="dashboard-card" aria-labelledby="search-heading">
+    <h2 class="card-heading" id="search-heading">Find friends</h2>
+    <form class="friend-search" action="/friends" method="GET">
+      <label class="visually-hidden" for="search">Search by username</label>
+      <input class="field-input" type="search" id="search" name="search" value="{{search}}" placeholder="Search by username">
+      <button class="submit-button" type="submit">Search</button>
+    </form>
+
+    {{#if searched}}
+      <ul class="friend-list">
+        {{#each results}}
+          <li class="friend-row">
+            <span>{{username}}</span>
+            <form action="/friends/add" method="POST">
+              <input type="hidden" name="friend_id" value="{{user_id}}">
+              <button class="friend-button" type="submit">Add</button>
+            </form>
+          </li>
+        {{else}}
+          <li class="card-description">No users found for "{{search}}".</li>
+        {{/each}}
+      </ul>
+    {{/if}}
+  </section>
+
+  <section class="dashboard-card" aria-labelledby="friends-heading">
+    <h2 class="card-heading" id="friends-heading">Your friends</h2>
+    <ul class="friend-list">
+      {{#each friends}}
+        <li class="friend-row">
+          <span>{{username}}</span>
+          <form action="/friends/remove" method="POST">
+            <input type="hidden" name="friend_id" value="{{user_id}}">
+            <button class="friend-button" type="submit">Remove</button>
+          </form>
+        </li>
+      {{else}}
+        <li class="card-description">You haven't added any friends yet. Search for a username above.</li>
+      {{/each}}
+    </ul>
+  </section>
+</main>

@@ -119,3 +119,15 @@
 .auth-switch a { color: #f4f3ff; font-weight: 600; }
 .light-mode .auth-switch { color: #363659; }
 .light-mode .auth-switch a { color: #21213b; }
+
+/* Friends page: search bar and friends list. */
+.friend-search { display: flex; gap: .75rem; }
+.friend-search .field-input { margin-bottom: 0; }
+.friend-search .submit-button { width: auto; }
+.friend-list { list-style: none; padding: 0; margin: 1rem 0 0; }
+.friend-row { display: flex; justify-content: space-between; align-items: center; padding: .75rem 0; border-top: 1px solid #363659; }
+.friend-button { padding: .4rem .9rem; border: 1px solid #6868a6; border-radius: .5rem; background: #363659; color: #f4f3ff; font: inherit; cursor: pointer; }
+.friend-button:hover { background: #505077; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.light-mode .friend-row { border-color: #a4a6c3; }
+.light-mode .friend-button { background: #c2c6e3; border-color: #9195b0; color: #21213b; }
