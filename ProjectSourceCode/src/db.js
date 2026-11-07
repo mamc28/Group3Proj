@@ -9,7 +9,7 @@ if (
 }
 
 const db = pgp({
-  host: process.env.POSTGRES_HOST,
+  host: process.env.POSTGRES_HOST || 'db',
   port: Number(process.env.POSTGRES_PORT || 5432),
   database,
   user: process.env.POSTGRES_USER,

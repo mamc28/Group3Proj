@@ -1,0 +1,30 @@
+<main class="set-content">
+  <a href="/home">Back to Home</a>
+  <h1>{{title}}</h1>
+  <p class="card-description">{{description}}</p>
+  <p>{{cards.length}} cards</p>
+  <nav class="set-actions" aria-label="Manage this set">
+    <a class="create-button" href="/decks/{{deck_id}}/edit">Edit set</a>
+    <a class="create-button" href="/decks/{{deck_id}}/rename">Rename</a>
+    <a class="create-button danger-button" href="/decks/{{deck_id}}/delete">Delete set</a>
+  </nav>
+  {{#each cards}}
+    <article class="dashboard-card">
+      <h2 class="card-heading">Question</h2>
+      {{#if image_type}}
+        <img class="card-image-preview" src="/decks/{{../deck_id}}/cards/{{card_id}}/image" alt="{{question}}">
+        {{#if showFrontText}}<p class="card-text">{{question}}</p>{{/if}}
+      {{else}}
+        <p class="card-text">{{question}}</p>
+      {{/if}}
+      <h2 class="card-heading">Answer</h2>
+      {{#if back_image_type}}
+        <img class="card-image-preview" src="/decks/{{../deck_id}}/cards/{{card_id}}/back-image" alt="{{answer}}">
+        <p class="card-text">{{answer}}</p>
+      {{else}}
+        <p class="card-text">{{answer}}</p>
+      {{/if}}
+    </article>
+  {{/each}}
+  <a href="/decks/new">Create another set</a>
+</main>

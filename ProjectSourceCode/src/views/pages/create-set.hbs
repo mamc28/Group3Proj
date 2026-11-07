@@ -1,0 +1,57 @@
+<main class="set-content">
+  <a href="/home">Back to Home</a>
+  <h1>{{#if isEditing}}Edit flashcard set{{else}}Create a flashcard set{{/if}}</h1>
+  {{> message}}
+  <form action="{{#if isEditing}}/decks/{{deck_id}}/edit{{else}}/decks{{/if}}" method="post" id="create-set-form">
+    <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+    <label class="field-label" for="set-title">Title</label>
+    <input class="field-input" id="set-title" name="title" value="{{title}}" maxlength="100" required>
+    <label class="field-label" for="set-description">Description (optional)</label>
+    <textarea class="field-input" id="set-description" name="description" rows="2">{{description}}</textarea>
+    <p>Choose text, image, image + text, or images on both sides for each card. You can add up to 100 cards.</p>
+    <p class="card-description">Images can be up to 2 MB each. Keep the complete set upload under 8 MB.</p>
+    <noscript><p>Enable JavaScript to upload and preview images. Text cards can still be saved.</p></noscript>
+    <div id="card-fields">
+      {{#each cards}}
+      <fieldset class="dashboard-card card-fields">
+        <legend>Card <span class="card-number"></span></legend>
+        <input class="card-id" type="hidden" name="cards[{{@index}}][card_id]" value="{{card_id}}">
+        <label class="field-label">Card type
+          <select class="field-input card-front-type" name="cards[{{@index}}][frontType]">
+            <option value="text">Text</option>
+            <option value="image" {{#if isImageOnly}}selected{{/if}}>Image</option>
+            <option value="image-text" {{#if isImageText}}selected{{/if}}>Image + text</option>
+            <option value="image-both" {{#if isImageBoth}}selected{{/if}}>Image on both sides</option>
+          </select>
+        </label>
+        <div class="card-image-fields card-front-image-fields" {{#unless isImage}}hidden{{/unless}}>
+          <label class="field-label">Image (PNG, JPEG, or WebP, up to 2 MB)
+            <input class="field-input card-image-file" type="file" accept="image/png,image/jpeg,image/webp">
+          </label>
+          <input class="card-image-data" type="hidden" name="cards[{{@index}}][image]" value="{{image}}">
+          <img class="card-image-preview" alt="Selected card image" {{#if image}}src="{{image}}"{{else}}hidden{{/if}}>
+          <p class="card-image-error" role="alert"></p>
+        </div>
+        <label class="field-label"><span class="card-question-label">{{#if isImageText}}Front text{{else}}{{#if isImageBoth}}Front text{{else}}{{#if isImage}}Image description{{else}}Front{{/if}}{{/if}}{{/if}}</span>
+          <textarea class="field-input card-question" name="cards[{{@index}}][question]" rows="3" required>{{question}}</textarea>
+        </label>
+        <div class="card-image-fields card-back-image-fields" {{#unless isImageBoth}}hidden{{/unless}}>
+          <label class="field-label">Back image (PNG, JPEG, or WebP, up to 2 MB)
+            <input class="field-input card-image-file" type="file" accept="image/png,image/jpeg,image/webp">
+          </label>
+          <input class="card-image-data card-back-image-data" type="hidden" name="cards[{{@index}}][backImage]" value="{{backImage}}">
+          <img class="card-image-preview" alt="Selected back image" {{#if backImage}}src="{{backImage}}"{{else}}hidden{{/if}}>
+          <p class="card-image-error" role="alert"></p>
+        </div>
+        <label class="field-label"><span class="card-answer-label">{{#if isImageBoth}}Back text{{else}}Back{{/if}}</span>
+          <textarea class="field-input card-answer" name="cards[{{@index}}][answer]" rows="3" required>{{answer}}</textarea>
+        </label>
+        <button class="create-button remove-card" type="button" hidden>Remove card</button>
+      </fieldset>
+      {{/each}}
+    </div>
+    <button class="create-button" id="add-card" type="button" hidden>Add card</button>
+    <button class="submit-button" type="submit">{{#if isEditing}}Save changes{{else}}Save set{{/if}}</button>
+  </form>
+</main>
+<script src="/js/create-set.js" defer></script>

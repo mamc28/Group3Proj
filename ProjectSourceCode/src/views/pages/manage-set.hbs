@@ -1,0 +1,22 @@
+<main class="set-content">
+  <a href="/decks/{{deck_id}}">Back to set</a>
+  <h1>{{#if isDelete}}Delete set{{else}}Rename set{{/if}}</h1>
+  {{> message}}
+  {{#if isDelete}}
+    <p>Delete “{{title}}”? This permanently deletes the set, its cards, images, and associated study records.</p>
+    <form action="/decks/{{deck_id}}/delete" method="post">
+      <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+      <div class="set-actions">
+        <a class="create-button" href="/decks/{{deck_id}}">Cancel</a>
+        <button class="create-button danger-button" type="submit">Delete permanently</button>
+      </div>
+    </form>
+  {{else}}
+    <form action="/decks/{{deck_id}}/rename" method="post">
+      <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+      <label class="field-label" for="rename-title">Set name</label>
+      <input class="field-input" id="rename-title" name="title" value="{{title}}" maxlength="100" required autofocus>
+      <button class="submit-button" type="submit">Save name</button>
+    </form>
+  {{/if}}
+</main>

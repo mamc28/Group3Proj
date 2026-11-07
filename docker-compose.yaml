@@ -7,6 +7,13 @@ services:
     volumes:
       - group-project:/var/lib/postgresql/data
       - ./ProjectSourceCode/src/init_data:/docker-entrypoint-initdb.d
+  web-init:
+    image: node:lts
+    working_dir: /repository
+    volumes:
+      - ./:/repository
+      - app-node-modules:/repository/node_modules
+    command: ['chown', '-R', 'node:node', '/repository/node_modules']
   web:
     image: node:lts
     user: 'node'
@@ -15,11 +22,21 @@ services:
     environment:
       - NODE_ENV=development
     depends_on:
-      - db
+      db:
+        condition: service_started
+      web-init:
+        condition: service_completed_successfully
     ports:
       - '3000:3000'
     volumes:
       - ./:/repository
-    command: 'npm start'
+      - app-node-modules:/repository/node_modules
+    command:
+      [
+        'sh',
+        '-c',
+        'npm ci --workspace=scramble --include-workspace-root=false && npm --workspace=scramble start',
+      ]
 volumes:
   group-project:
+  app-node-modules:
