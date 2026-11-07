@@ -34,3 +34,4 @@ In progress / verification needed
 - The dashboard's Create new set button is still disabled in the current home.hbs template; Content, Progress, and Friends sidebar options are also labeled "coming soon." The card/card-set utility functions should not yet be described as a completed end-to-end UI workflow.
 - The repository's Issues2Fix file lists a problem logging in after registration and inconsistent availability of light/dark mode on the login screen. These are team-reported items, not independently confirmed current defects; re-test and close/update them if fixed.
 - End-to-end authentication, flashcard creation, deck persistence, and theme behavior have not been independently runtime-tested for these notes.
+- Added a functing "Friends" page where the user can search for user to add or remove as a friend.
