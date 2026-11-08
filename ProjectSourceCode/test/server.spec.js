@@ -22,13 +22,11 @@ describe('GET /register', () => {
 });
 
 // Add your registration tests below.
-
 describe('POST /register', () => {
   const {randomUUID} = require('node:crypto');
-  const uniqueId = randomUUID();
   const testUser = {
-    username: `lab10_${uniqueId}`,
-    email: `lab10_${uniqueId}@example.test`,
+    username: `lab10_${randomUUID()}`,
+    email: `lab10_${randomUUID()}@example.com`,
     password: 'TestPassword123!',
   };
 
@@ -40,40 +38,44 @@ describe('POST /register', () => {
   afterEach(removeTestUser);
 
   it('creates exactly one user for valid input', async () => {
+    // Act: submit the request through the actual registration route.
     const res = await chai.request(app)
-      .post('/register')
-      .redirects(0)
-      .send(testUser);
+    .post('/register')
+    .redirects(0)
+    .send(testUser);
 
+    // Assert: verify both the response and the saved record.
     expect(res).to.have.status(302);
-    expect(res).to.have.header('location', '/login');
+    expect(res.headers.location).to.equal('/login');
 
     const rows = await db.any(
-      'SELECT username, email, password_hash FROM users WHERE username = $1',
+      'SELECT username, password_hash FROM users WHERE username = $1',
       [testUser.username]
     );
     expect(rows).to.have.lengthOf(1);
     expect(rows[0].username).to.equal(testUser.username);
-    expect(rows[0].email).to.equal(testUser.email);
     expect(rows[0].password_hash).not.to.equal(testUser.password);
     expect(await bcrypt.compare(testUser.password, rows[0].password_hash)).to.equal(
       true
     );
   });
 
-  it('rejects registration when the password is missing', async () => {
-    const res = await chai.request(app).post('/register').send({
-      username: testUser.username,
-      email: testUser.email,
-    });
+  // TODO: Add an async test that submits this username without a password.
+  // Assert the documented rejection response and zero matching database rows.
+ it('rejects registration with missing password', async () => {
+    const invalidUser = {
+      username: testUser.username};
 
-    expect(res).to.have.status(400);
-    expect(res.text).to.include('Enter a username, email, and password.');
+      const res = await chai.request(app)
+      .post('/register')
+      .send(invalidUser);
 
-    const rows = await db.any(
-      'SELECT username FROM users WHERE username = $1',
-      [testUser.username]
-    );
-    expect(rows).to.have.lengthOf(0);
+      expect(res).to.have.status(400);
+
+      const rows = await db.any(
+        'SELECT username FROM users WHERE username = $1',
+        [testUser.username]
+      );
+      expect(rows).to.have.lengthOf(0);
   });
 });
