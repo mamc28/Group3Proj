@@ -86,13 +86,26 @@ app.get('/home', auth, async (req, res) => {
       [userId]
     );
 
+    
 
-    res.render('pages/home', { isHome: true, username: req.session.user.username, recentSets });
+
+    res.render('pages/home', {
+      isHome: true,
+      username: req.session.user.username,
+      recentSets,
+
+    
+      currentStreak: streak ? streak.current_streak : 0,
+      longestStreak: streak ? streak.longest_streak : 0,
+      lastLoginDate: streak ? streak.last_login_date : null
+    });
   } catch (error) {
     console.error('Unable to load sets:', error.code);
     res.status(500).render('pages/home', {
       isHome: true, username: req.session.user.username,
       message: 'Unable to load your sets. Please try again.', error: true,
+      currentStreak: 0,
+      longestStreak: 0,
     });
   }
 });
