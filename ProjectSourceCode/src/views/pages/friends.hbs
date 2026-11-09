@@ -47,7 +47,7 @@
     <ul class="friend-list">
       {{#each friends}}
         <li class="friend-row">
-          <span>{{username}}</span>
+          <a class="friend-name" href="/friends?profile={{user_id}}">{{username}}</a>
           <form action="/friends/remove" method="POST">
             <input type="hidden" name="friend_id" value="{{user_id}}">
             <button class="friend-button" type="submit">Remove</button>
@@ -59,3 +59,20 @@
     </ul>
   </section>
 </main>
+
+{{#if profile}}
+  {{! Friend profile pop-up. Clicking the dark background or the X goes back to /friends, which closes it. }}
+  <div class="profile-overlay">
+    <a class="profile-backdrop" href="/friends" aria-label="Close profile"></a>
+    <section class="profile-popup" role="dialog" aria-modal="true" aria-labelledby="profile-name">
+      <a class="profile-close" href="/friends" aria-label="Close profile" autofocus>&times;</a>
+      <h2 class="profile-name" id="profile-name">{{profile.username}}</h2>
+      <p class="card-description">Member since {{profile.member_since}}</p>
+
+      <div class="profile-streaks">
+        <p><strong>{{profile.current_streak}}</strong> day streak</p>
+        <p><strong>{{profile.longest_streak}}</strong> longest streak</p>
+      </div>
+    </section>
+  </div>
+{{/if}}
