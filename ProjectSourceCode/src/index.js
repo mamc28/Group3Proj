@@ -11,6 +11,7 @@ const session = require('express-session'); // To set the session object. To sto
 const bcrypt = require('bcryptjs'); //  To hash passwords
 const { db } = require('./db');
 const flashcardRoutes = require('./flashcardRoutes');
+const examRoutes = require('./examRoutes');
 
 // *****************************************************
 // <!-- Section 2 : Connect to DB -->
@@ -65,6 +66,10 @@ const auth = (req, res, next) => {
 app.get('/', (req, res) => {
   res.redirect(req.session.user ? '/home' : '/login');
 });
+
+// Register authenticated routes.
+app.use('/exams', auth, examRoutes);
+
 app.get('/register', (req, res) => {
   res.render('pages/register');
 });
@@ -360,7 +365,6 @@ async function updateLoginStreak(userId) {
           last_login_date = EXCLUDED.last_login_date;
   `, [userId]);
 }
-
 
 // *****************************************************
 // <!-- Section 5 : Start Server-->

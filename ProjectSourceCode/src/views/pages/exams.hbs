@@ -1,0 +1,271 @@
+<div class="dashboard site-page">
+
+    <!-- Sidebar navigation -->
+    <aside class="sidebar">
+        <a href="/home" class="brand">scramble.</a>
+        <p class="sidebar-description">Your study space.</p>
+
+        <nav>
+            <ul class="navigation-list">
+                <li>
+                    <a href="/home" class="navigation-item">Dashboard</a>
+                </li>
+                <li>
+                    <a href="/decks" class="navigation-item">Flashcards</a>
+                </li>
+                <li>
+                    <a href="/exams" class="navigation-item navigation-active"
+                       aria-current="page">Exams</a>
+                </li>
+                <li>
+                    <a href="/friends" class="navigation-item">Friends</a>
+                </li>
+            </ul>
+        </nav>
+
+        <a href="/logout" class="logout-link">Log out</a>
+    </aside>
+
+    <!-- Main page content -->
+    <main class="dashboard-content">
+
+        <h1 class="welcome-heading">Your exams</h1>
+        <p class="welcome-description">
+            Keep track of upcoming exams and the ones you've already completed.
+        </p>
+
+        <!-- Validation errors -->
+        {{#if errors}}
+            <div class="dashboard-card" role="alert">
+                <h2 class="card-heading">Please fix the following:</h2>
+                <ul>
+                    {{#each errors}}
+                        <li>{{this}}</li>
+                    {{/each}}
+                </ul>
+            </div>
+        {{/if}}
+
+        <!-- Add/edit exam form -->
+        <section class="dashboard-card">
+            <h2 class="card-heading">
+                {{#if editingExam}}
+                    Edit exam
+                {{else}}
+                    Schedule an exam
+                {{/if}}
+            </h2>
+
+            <p class="card-description">
+                Add the details of an exam so you can keep it on your schedule.
+            </p>
+
+            <form
+                method="POST"
+                action="{{#if editingExam}}/exams/{{editingExam.exam_id}}/edit{{else}}/exams{{/if}}"
+            >
+                <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+
+                <label for="title" class="field-label">Exam title *</label>
+                <input
+                    type="text"
+                    id="title"
+                    name="title"
+                    class="field-input"
+                    maxlength="150"
+                    placeholder="e.g. Midterm Exam"
+                    value="{{formData.title}}"
+                    required
+                >
+
+                <label for="course" class="field-label">Course</label>
+                <input
+                    type="text"
+                    id="course"
+                    name="course"
+                    class="field-input"
+                    maxlength="100"
+                    placeholder="e.g. CSCI 3308"
+                    value="{{formData.course}}"
+                >
+
+                <label for="exam_date" class="field-label">Exam date *</label>
+                <input
+                    type="date"
+                    id="exam_date"
+                    name="exam_date"
+                    class="field-input"
+                    value="{{formData.exam_date}}"
+                    required
+                >
+
+                <label for="start_time" class="field-label">Start time</label>
+                <input
+                    type="time"
+                    id="start_time"
+                    name="start_time"
+                    class="field-input"
+                    value="{{formData.start_time}}"
+                >
+
+                <label for="location" class="field-label">Location</label>
+                <input
+                    type="text"
+                    id="location"
+                    name="location"
+                    class="field-input"
+                    maxlength="150"
+                    placeholder="e.g. Engineering Center, Room 120"
+                    value="{{formData.location}}"
+                >
+
+                <label for="description" class="field-label">Notes</label>
+                <textarea
+                    id="description"
+                    name="description"
+                    class="field-input"
+                    rows="4"
+                    maxlength="5000"
+                    placeholder="Topics to study, materials to bring, or other notes..."
+                >{{formData.description}}</textarea>
+
+                <button type="submit" class="submit-button">
+                    {{#if editingExam}}
+                        Save changes
+                    {{else}}
+                        Add exam
+                    {{/if}}
+                </button>
+
+                {{#if editingExam}}
+                    <p>
+                        <a href="/exams">Cancel editing</a>
+                    </p>
+                {{/if}}
+            </form>
+        </section>
+
+        <!-- Upcoming exams -->
+        <section class="dashboard-card">
+            <h2 class="card-heading">Upcoming exams</h2>
+
+            {{#if upcomingExams.length}}
+                {{#each upcomingExams}}
+                    <article class="recent-set">
+                        <h3 class="card-title">{{this.title}}</h3>
+
+                        <p class="card-description">
+                            <strong>Date:</strong> {{this.display_date}}
+                            {{#if this.display_time}}
+                                <br>
+                                <strong>Time:</strong> {{this.display_time}}
+                            {{/if}}
+                            {{#if this.course}}
+                                <br>
+                                <strong>Course:</strong> {{this.course}}
+                            {{/if}}
+                            {{#if this.location}}
+                                <br>
+                                <strong>Location:</strong> {{this.location}}
+                            {{/if}}
+                        </p>
+
+                        {{#if this.description}}
+                            <p>{{this.description}}</p>
+                        {{/if}}
+
+                        <div class="set-actions">
+                            <a
+                                href="/exams/{{this.exam_id}}/edit"
+                                class="create-button"
+                            >Edit</a>
+
+                            <form
+                                method="POST"
+                                action="/exams/{{this.exam_id}}/delete"
+                            >
+                                <input
+                                    type="hidden"
+                                    name="csrfToken"
+                                    value="{{../csrfToken}}"
+                                >
+
+                                <button
+                                    type="submit"
+                                    class="create-button danger-button"
+                                    onclick="return confirm('Are you sure you want to delete this exam?');"
+                                >Delete</button>
+                            </form>
+                        </div>
+                    </article>
+                {{/each}}
+            {{else}}
+                <p class="card-description">
+                    You don't have any upcoming exams scheduled.
+                </p>
+            {{/if}}
+        </section>
+
+        <!-- Past exams -->
+        <section class="dashboard-card">
+            <h2 class="card-heading">Past exams</h2>
+
+            {{#if pastExams.length}}
+                {{#each pastExams}}
+                    <article class="recent-set">
+                        <h3 class="card-title">{{this.title}}</h3>
+
+                        <p class="card-description">
+                            <strong>Date:</strong> {{this.display_date}}
+                            {{#if this.display_time}}
+                                <br>
+                                <strong>Time:</strong> {{this.display_time}}
+                            {{/if}}
+                            {{#if this.course}}
+                                <br>
+                                <strong>Course:</strong> {{this.course}}
+                            {{/if}}
+                            {{#if this.location}}
+                                <br>
+                                <strong>Location:</strong> {{this.location}}
+                            {{/if}}
+                        </p>
+
+                        {{#if this.description}}
+                            <p>{{this.description}}</p>
+                        {{/if}}
+
+                        <div class="set-actions">
+                            <a
+                                href="/exams/{{this.exam_id}}/edit"
+                                class="create-button"
+                            >Edit</a>
+
+                            <form
+                                method="POST"
+                                action="/exams/{{this.exam_id}}/delete"
+                            >
+                                <input
+                                    type="hidden"
+                                    name="csrfToken"
+                                    value="{{../csrfToken}}"
+                                >
+
+                                <button
+                                    type="submit"
+                                    class="create-button danger-button"
+                                    onclick="return confirm('Are you sure you want to delete this exam?');"
+                                >Delete</button>
+                            </form>
+                        </div>
+                    </article>
+                {{/each}}
+            {{else}}
+                <p class="card-description">
+                    You don't have any past exams.
+                </p>
+            {{/if}}
+        </section>
+
+    </main>
+</div>

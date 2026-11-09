@@ -142,3 +142,32 @@ CREATE TABLE IF NOT EXISTS friendships (
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
     FOREIGN KEY (friend_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
+
+-- 9. Exams
+-- Keeps track of exams a user has scheduled or completed
+CREATE TABLE IF NOT EXISTS exams (
+    exam_id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL,
+
+    title VARCHAR(150) NOT NULL,
+    course VARCHAR(100),
+
+    exam_date DATE NOT NULL,
+    start_time TIME,
+
+    location VARCHAR(150),
+    description TEXT,
+
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (user_id)
+        REFERENCES users(user_id)
+        ON DELETE CASCADE,
+
+    CHECK (length(trim(title)) > 0)
+);
+
+-- Makes retrieving a user's exams in chronological order efficient
+CREATE INDEX IF NOT EXISTS idx_exams_user_date
+    ON exams(user_id, exam_date, start_time);
