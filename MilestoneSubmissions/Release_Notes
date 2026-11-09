@@ -35,3 +35,4 @@ In progress / verification needed
 - The repository's Issues2Fix file lists a problem logging in after registration and inconsistent availability of light/dark mode on the login screen. These are team-reported items, not independently confirmed current defects; re-test and close/update them if fixed.
 - End-to-end authentication, flashcard creation, deck persistence, and theme behavior have not been independently runtime-tested for these notes.
 - Added a functing "Friends" page where the user can search for user to add or remove as a friend.
+- Added a profile pop-up when clicking on a friend that will show that user's longest streak.
