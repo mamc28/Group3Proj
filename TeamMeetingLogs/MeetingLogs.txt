@@ -46,6 +46,8 @@ Added the function of being able to add friends
 Profile pop-up for friends
 
 Amelia’s Commits:
+Started lab 10 automated testing
+Started UAT-planning layout 
 
 Jackson’s Commits:
 Streak Pop-up
@@ -59,6 +61,6 @@ Added/started the exam page
 
 Overview:
 
-Looking at the overall roadmap for the current project as there is only 2 weeks left. Look into the calendar API. Make sure to assign someone to at least look at the calendar API. Split up the work for the calendar API. 
+Looking at the overall roadmap for the current project as there is only 2 weeks left. Look into the calendar API. Make sure to assign someone to at least look at the calendar API.
 
 
