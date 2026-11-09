@@ -36,3 +36,4 @@ In progress / verification needed
 - End-to-end authentication, flashcard creation, deck persistence, and theme behavior have not been independently runtime-tested for these notes.
 - Added a functing "Friends" page where the user can search for user to add or remove as a friend.
 - Added a profile pop-up when clicking on a friend that will show that user's longest streak.
+- Added the user's flashcard sets to the profile pop-up.
