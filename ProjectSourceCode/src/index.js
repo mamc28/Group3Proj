@@ -71,12 +71,22 @@ app.get('/register', (req, res) => {
 app.use('/decks', auth, flashcardRoutes);
 app.get('/home', auth, async (req, res) => {
   try {
+    const userId = req.session.user.user_id;
+
     const recentSets = await db.any(
       `SELECT d.deck_id, d.title AS name, COUNT(f.card_id)::int AS "cardCount"
        FROM decks d LEFT JOIN flashcards f ON f.deck_id = d.deck_id
        WHERE d.user_id = $1 GROUP BY d.deck_id ORDER BY d.created_at DESC, d.deck_id DESC`,
-      [req.session.user.user_id]
+      [userId]
     );
+    const streak = await db.oneOrNone(
+      `SELECT current_streak, longest_streak, last_login_date
+       FROM user_stats
+       WHERE user_id = $1`,
+      [userId]
+    );
+
+
     res.render('pages/home', { isHome: true, username: req.session.user.username, recentSets });
   } catch (error) {
     console.error('Unable to load sets:', error.code);
