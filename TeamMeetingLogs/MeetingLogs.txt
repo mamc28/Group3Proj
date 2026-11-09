@@ -34,3 +34,31 @@ Update the project board
 
 Update the release notes too --- Lets automate this to use commit messages
 
+Meeting Notes 11/9/26 :
+
+Max’s Commits:
+Created an edit, rename, and delete function for the sets.
+Added some security features as well
+
+Eric’s Commits
+Added the friend’s page
+Added the function of being able to add friends 
+Profile pop-up for friends
+
+Amelia’s Commits:
+
+Jackson’s Commits:
+Streak Pop-up
+Updating and ensuring that the streak is active
+Made sure the longest streak was being stored in the database
+
+Travis’ Commits:
+Changed some style aspects 
+Fixed some merge issues
+Added/started the exam page
+
+Overview:
+
+Looking at the overall roadmap for the current project as there is only 2 weeks left. Look into the calendar API. Make sure to assign someone to at least look at the calendar API. Split up the work for the calendar API. 
+
+
