@@ -73,6 +73,17 @@
         <p><strong>{{profile.current_streak}}</strong> day streak</p>
         <p><strong>{{profile.longest_streak}}</strong> longest streak</p>
       </div>
+      <h3 class="card-heading">Flashcard sets</h3>
+      <ul class="friend-list">
+        {{#each profile.sets}}
+          <li class="friend-row">
+            <span>{{title}}</span>
+            <span class="card-description">{{card_count}}</span>
+          </li>
+        {{else}}
+          <li class="card-description">{{profile.username}} hasn't made any sets yet.</li>
+        {{/each}}
+      </ul>
     </section>
   </div>
 {{/if}}
