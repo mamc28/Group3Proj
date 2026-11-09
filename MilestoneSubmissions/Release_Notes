@@ -37,3 +37,6 @@ In progress / verification needed
 - Added a functing "Friends" page where the user can search for user to add or remove as a friend.
 - Added a profile pop-up when clicking on a friend that will show that user's longest streak.
 - Added the user's flashcard sets to the profile pop-up.
+- Added flash card creation system
+- Added different flashcard types (image + text)
+- Added flash card set editing, deletion, and renaming.
