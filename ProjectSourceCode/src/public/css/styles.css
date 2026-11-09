@@ -120,19 +120,6 @@
 .light-mode .auth-switch { color: #363659; }
 .light-mode .auth-switch a { color: #21213b; }
 
-<<<<<<< HEAD
-/* Friends page: search bar and friends list. */
-.friend-search { display: flex; gap: .75rem; }
-.friend-search .field-input { margin-bottom: 0; }
-.friend-search .submit-button { width: auto; }
-.friend-list { list-style: none; padding: 0; margin: 1rem 0 0; }
-.friend-row { display: flex; justify-content: space-between; align-items: center; padding: .75rem 0; border-top: 1px solid #363659; }
-.friend-button { padding: .4rem .9rem; border: 1px solid #6868a6; border-radius: .5rem; background: #363659; color: #f4f3ff; font: inherit; cursor: pointer; }
-.friend-button:hover { background: #505077; }
-.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-.light-mode .friend-row { border-color: #a4a6c3; }
-.light-mode .friend-button { background: #c2c6e3; border-color: #9195b0; color: #21213b; }
-=======
 /* Manual flashcard creation and saved sets. */
 .set-content { width: min(800px, 100%); box-sizing: border-box; padding: 2rem 1.5rem; margin: 0 auto; }
 .set-content a, .recent-set a { color: inherit; }
@@ -140,9 +127,10 @@
 .set-content .create-button, a.create-button { display: inline-block; cursor: pointer; text-decoration: none; margin: 0 0 1.5rem; }
 .create-button:disabled { cursor: not-allowed; opacity: .6; }
 .card-fields { min-width: 0; }
-.card-fields legend { float: none; width: auto; padding: 0 .5rem; font-size: 1.15rem; }
+.card-fields legend {float: none; width: auto; padding: .35rem .75rem; font-size: 1.05rem; font-weight: 600; background-color: #21213b; border: 2px solid #363659; border-radius: .4rem;}
 .card-fields textarea { resize: vertical; }
 .card-text, .set-content .card-description { white-space: pre-wrap; overflow-wrap: anywhere; }
+.light-mode .card-fields legend {background-color: #d0ddec; border-color: #a4a6c3;}
 
 .set-dialog { box-sizing: border-box; width: min(520px, calc(100% - 2rem)); max-height: calc(100dvh - 2rem); overflow-y: auto; padding: 2rem; border: 1px solid #505077; border-radius: 1rem; background: #21213b; color: #f4f3ff; }
 .set-dialog::backdrop { background: rgb(0 0 0 / 65%); }
@@ -190,4 +178,3 @@ html:has(.set-dialog[open]) { overflow: hidden; }
 .light-mode #open-create-set { background: #5f52b5; border-color: #5f52b5; color: #fff; }
 .light-mode #open-create-set:hover { background: #50449e; }
 @media (prefers-reduced-motion: reduce) { #open-create-set { transition: none; } }
->>>>>>> 45c3233f0b80f2b60d49608ea4aff67fefa906c2
