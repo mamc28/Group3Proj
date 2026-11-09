@@ -237,20 +237,34 @@ app.get('/friends', auth, async (req, res) => {
       // A streak only counts if they logged in today or yesterday, otherwise it shows 0.
       profile = await db.one(
         `SELECT
-            users.username,
-            TO_CHAR(users.created_at, 'Mon FMDD, YYYY') AS member_since,
-            CASE
-              WHEN user_stats.last_login_date >= (CURRENT_TIMESTAMP AT TIME ZONE users.timezone)::DATE - 1
-              THEN user_stats.current_streak
-              ELSE 0
-            END AS current_streak,
-            COALESCE(user_stats.longest_streak, 0) AS longest_streak
-          FROM users
-          LEFT JOIN user_stats ON user_stats.user_id = users.user_id
-          WHERE users.user_id = $1`,
+           users.username,
+           TO_CHAR(users.created_at, 'Mon FMDD, YYYY') AS member_since,
+           CASE
+             WHEN user_stats.last_login_date >= (CURRENT_TIMESTAMP AT TIME ZONE users.timezone)::DATE - 1
+             THEN user_stats.current_streak
+             ELSE 0
+           END AS current_streak,
+           COALESCE(user_stats.longest_streak, 0) AS longest_streak
+         FROM users
+         LEFT JOIN user_stats ON user_stats.user_id = users.user_id
+         WHERE users.user_id = $1`,
+        [friend.user_id]
+      );
+
+      // Their flashcard sets, newest first, with how many cards each one has.
+      profile.sets = await db.any(
+        `SELECT
+           decks.title,
+           COUNT(flashcards.card_id) || CASE WHEN COUNT(flashcards.card_id) = 1 THEN ' card' ELSE ' cards' END AS card_count
+         FROM decks
+         LEFT JOIN flashcards ON flashcards.deck_id = decks.deck_id
+         WHERE decks.user_id = $1
+         GROUP BY decks.deck_id
+         ORDER BY decks.created_at DESC`,
         [friend.user_id]
       );
     }
+
 
     res.render('pages/friends', {
       isHome: true, // uses the same dashboard layout as the home page
