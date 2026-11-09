@@ -178,3 +178,30 @@ html:has(.set-dialog[open]) { overflow: hidden; }
 .light-mode #open-create-set { background: #5f52b5; border-color: #5f52b5; color: #fff; }
 .light-mode #open-create-set:hover { background: #50449e; }
 @media (prefers-reduced-motion: reduce) { #open-create-set { transition: none; } }
+
+/* Friends page: search bar and friends list. */
+.friend-search { display: flex; gap: .75rem; }
+.friend-search .field-input { margin-bottom: 0; }
+.friend-search .submit-button { width: auto; }
+.friend-list { list-style: none; padding: 0; margin: 1rem 0 0; }
+.friend-row { display: flex; justify-content: space-between; align-items: center; padding: .75rem 0; border-top: 1px solid #363659; }
+.friend-button { padding: .4rem .9rem; border: 1px solid #6868a6; border-radius: .5rem; background: #363659; color: #f4f3ff; font: inherit; cursor: pointer; }
+.friend-button:hover { background: #505077; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.light-mode .friend-row { border-color: #a4a6c3; }
+.light-mode .friend-button { background: #c2c6e3; border-color: #9195b0; color: #21213b; }
+
+/* Friend profile pop-up, opened by clicking a name in the friends list. */
+.friend-name { color: inherit; font-weight: 600; }
+.profile-overlay { position: fixed; inset: 0; display: grid; place-items: center; padding: 1.5rem; z-index: 10; }
+.profile-backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, .6); }
+.profile-popup { position: relative; box-sizing: border-box; width: min(480px, 100%); max-height: 85vh; overflow-y: auto; padding: 2rem; border: 1px solid #505077; border-radius: 1rem; background: #21213b; }
+.profile-close { position: absolute; top: .75rem; right: 1rem; color: #c2c2d9; font-size: 1.75rem; line-height: 1; text-decoration: none; }
+.profile-name { margin: 0; font-size: 1.75rem; }
+.profile-streaks { display: flex; gap: 1rem; margin: 1.25rem 0 1.75rem; }
+.profile-streaks p { flex: 1; margin: 0; padding: .75rem 1rem; border-radius: .65rem; background: #363659; color: #c2c2d9; }
+.profile-streaks strong { display: block; font-size: 1.5rem; color: #f4f3ff; }
+.light-mode .profile-popup { background: #d0ddec; border-color: #9195b0; }
+.light-mode .profile-close { color: #363659; }
+.light-mode .profile-streaks p { background: #c2c6e3; color: #363659; }
+.light-mode .profile-streaks strong { color: #21213b; }
