@@ -42,3 +42,39 @@ the schema updates to that volume with:
 ```sh
 docker compose exec db sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TIMESTAMPTZ; ALTER TABLE user_stats ADD COLUMN IF NOT EXISTS last_login_date DATE;"'
 ```
+
+## Confidence ratings and spaced review
+
+Reveal a card's answer, then select **Again**, **Hard**, **Good**, or **Easy**.
+Ratings replace Next/Previous navigation and save before the next card appears.
+The study view loads new and due cards; View all cards remains available for browsing.
+When no cards are due, it shows the next review time and checks for due cards automatically.
+Distraction-free studying uses the same queue and ratings.
+
+New cards start with these review intervals:
+
+| Rating | Next review |
+| --- | --- |
+| Again | 1 minute |
+| Hard | 6 hours |
+| Good | 1 day |
+| Easy | 4 days |
+
+Later Hard/Good/Easy ratings multiply the previous scheduled interval by 1.2/2/3,
+respectively, with the initial intervals as minimums and 365 days as the maximum.
+Again resets the interval to one minute. This is a simple interval scheduler,
+not Anki's FSRS algorithm. Ratings are self-assessments: Again increments the
+incorrect counter; the other ratings increment the correct counter.
+Schedules and review history persist across visits; the displayed visit counter resets on reload.
+
+For an existing development database, apply the review-history migration once
+(the command is safe to rerun and preserves existing data):
+
+```sh
+docker compose exec -T web node migrateStudy.js
+```
+
+New databases apply `003_card_reviews.sql` during initialization. The tests apply
+it automatically to their isolated database. The suite includes scheduler tests,
+HTTP/database tests for persistence, ownership and retries, and jsdom interaction
+tests. Native browser fullscreen and visual animation still require a browser check.

@@ -232,6 +232,8 @@ router.get(['/:id/cards/:cardId/image', '/:id/cards/:cardId/back-image'], async 
   }
 });
 
+router.use('/:id/study', require('./studyRoutes'));
+
 router.get('/:id', async (req, res) => {
   if (!/^[1-9]\d*$/.test(req.params.id) || Number(req.params.id) > 2147483647) { //Postgres max int value, make sure it doest exceed that
     return res.status(404).send('Set not found.');

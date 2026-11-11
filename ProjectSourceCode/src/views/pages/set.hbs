@@ -9,40 +9,46 @@
     <a class="create-button danger-button" href="/decks/{{deck_id}}/delete">Delete set</a>
   </nav>
   {{#if cards.length}}
-  <section class="study-session" aria-label="Study cards" hidden>
+  <section class="study-session" aria-label="Study cards" data-deck-id="{{deck_id}}" data-csrf-token="{{csrfToken}}" hidden>
     <header class="study-toolbar">
       <h2 class="card-heading">Study flashcards</h2>
       <button type="button" class="create-button" id="study-focus" aria-haspopup="dialog">Distraction-free studying</button>
       <button type="button" class="create-button" id="study-exit" hidden>Exit distraction-free studying</button>
     </header>
-    <div class="study-progress"><span id="study-count"></span><span>Practice at your own pace</span></div>
+    <div class="study-progress"><span id="study-count"></span><span>New and due cards</span></div>
     <progress id="study-progress" value="0" max="{{cards.length}}" aria-label="Cards reviewed"></progress>
-    <div id="study-review">
+    <div id="study-review" hidden>
       <div class="study-card" id="study-card" role="button" tabindex="0" aria-label="Show answer" aria-describedby="study-hint">
         <div class="study-card-inner">
           <div class="study-face study-front"><span class="study-label">Question</span><div id="study-question"></div></div>
           <div class="study-face study-back" aria-hidden="true" inert><span class="study-label">Answer</span><div id="study-answer"></div></div>
         </div>
       </div>
-      <p id="study-hint" class="study-hint">Click the card or press Enter or Space to flip. Use arrow keys to navigate.</p>
+      <p id="study-hint" class="study-hint">Click the card or press Enter or Space to flip. Reveal the answer, then rate how well you recalled it.</p>
       <div class="study-controls">
-        <button type="button" class="create-button" id="study-previous">Previous</button>
         <button type="button" class="submit-button" id="study-flip">Flip card</button>
-        <button type="button" class="create-button" id="study-next">Next</button>
+      </div>
+      <div id="study-ratings" class="study-ratings" role="group" aria-label="How well did you recall the answer?" hidden>
+        <p>How well did you recall the answer?</p>
+        <button type="button" class="create-button" data-rating="again">Again <span></span></button>
+        <button type="button" class="create-button" data-rating="hard">Hard <span></span></button>
+        <button type="button" class="create-button" data-rating="good">Good <span></span></button>
+        <button type="button" class="create-button" data-rating="easy">Easy <span></span></button>
       </div>
     </div>
-    <div id="study-complete" class="dashboard-card study-complete" hidden>
-      <h2>Finished reviewing</h2>
-      <p>You reached the end of this set. Ready for another pass?</p>
-      <button type="button" class="submit-button" id="study-restart">Study again</button>
+    <div id="study-complete" class="dashboard-card study-complete">
+      <h2 id="study-complete-title">Loading review queue…</h2>
+      <p id="study-complete-description"></p>
+      <button type="button" class="submit-button" id="study-restart">Check due cards</button>
     </div>
+    <p id="study-error" class="card-image-error" role="alert" hidden></p>
     <p id="study-status" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true"></p>
   </section>
   <dialog id="study-focus-dialog" class="study-focus-dialog" aria-label="Distraction-free flashcard study"></dialog>
   <details id="study-all-cards" open>
     <summary>View all cards</summary>
   {{#each cards}}
-    <article class="dashboard-card" data-study-source>
+    <article class="dashboard-card" data-study-source data-card-id="{{card_id}}">
       <div data-question>
       <h2 class="card-heading">Question</h2>
       {{#if image_type}}

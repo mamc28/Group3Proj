@@ -13,6 +13,7 @@ describe('Manual flashcard creation', () => {
   let otherUserId;
   before(async () => {
     await db.none(require('node:fs').readFileSync(require('node:path').join(__dirname, '../src/init_data/002_card_images.sql'), 'utf8'));
+    await db.none(require('node:fs').readFileSync(require('node:path').join(__dirname, '../src/init_data/003_card_reviews.sql'), 'utf8'));
     const suffix = require('node:crypto').randomUUID();
     const hash = await bcrypt.hash('FlashcardPassword123!', 10);
     const user = await db.one(
@@ -323,6 +324,74 @@ describe('Manual flashcard creation', () => {
     }
     expect((await db.one('SELECT title FROM decks WHERE deck_id = $1', [own.deck_id])).title).to.equal('Manage me');
     expect((await db.one('SELECT question FROM flashcards WHERE card_id = $1', [own.card_id])).question).to.equal('Original front');
+  });
+
+  it('saves ratings, counters, history and due dates, deduplicates retries, and reloads schedules', async () => {
+    const { deck_id, card_id } = await makeManagedSet();
+    const page = await agent.get(`/decks/${deck_id}`);
+    const csrfToken = /data-csrf-token="([a-f0-9]+)"/.exec(page.text)[1];
+    const queue = await agent.get(`/decks/${deck_id}/study`);
+    expect(queue).to.have.status(200);
+    expect(queue.body.cards[0].due).to.equal(true);
+    expect(queue.body.cards[0].last_reviewed_at).to.equal(null);
+    const request = { cardId: card_id, rating: 'good', csrfToken,
+      requestId: require('node:crypto').randomUUID(), lastReviewedAt: null };
+    const responses = await Promise.all([
+      agent.post(`/decks/${deck_id}/study/reviews`).send(request),
+      agent.post(`/decks/${deck_id}/study/reviews`).send(request),
+    ]);
+    responses.forEach(response => expect(response).to.have.status(200));
+    const progress = await db.one('SELECT * FROM user_card_progress WHERE user_id = $1 AND card_id = $2', [userId, card_id]);
+    expect(progress.times_reviewed).to.equal(1);
+    expect(progress.times_correct).to.equal(1);
+    expect(progress.times_incorrect).to.equal(0);
+    expect(progress.confidence_level).to.equal(3);
+    expect(progress.next_review_at - progress.last_reviewed_at).to.equal(86400000);
+    expect((await db.one('SELECT COUNT(*)::int AS count FROM card_reviews WHERE user_id = $1 AND card_id = $2', [userId, card_id])).count).to.equal(1);
+    const reload = await agent.get(`/decks/${deck_id}/study`);
+    expect(reload.body.cards[0].due).to.equal(false);
+    expect(reload.body.cards[0].intervals.good).to.equal(2 * 86400);
+    const stale = await agent.post(`/decks/${deck_id}/study/reviews`).send({ ...request, requestId: require('node:crypto').randomUUID() });
+    expect(stale).to.have.status(409);
+    expect(await agent.post(`/decks/${deck_id}/study/reviews`).send({ ...request, rating: 'easy' })).to.have.status(409);
+    const again = await agent.post(`/decks/${deck_id}/study/reviews`).send({ ...request, rating: 'again',
+      requestId: require('node:crypto').randomUUID(), lastReviewedAt: progress.last_reviewed_at.toISOString() });
+    expect(again).to.have.status(200);
+    const updated = await db.one('SELECT * FROM user_card_progress WHERE user_id = $1 AND card_id = $2', [userId, card_id]);
+    expect(updated.times_reviewed).to.equal(2);
+    expect(updated.times_incorrect).to.equal(1);
+    expect(updated.next_review_at - updated.last_reviewed_at).to.equal(60000);
+    await db.none("UPDATE user_card_progress SET next_review_at = CURRENT_TIMESTAMP - INTERVAL '1 second' WHERE card_id = $1", [card_id]);
+    expect((await agent.get(`/decks/${deck_id}/study`)).body.cards[0].due).to.equal(true);
+    await db.none('DELETE FROM decks WHERE deck_id = $1', [deck_id]);
+    expect((await db.one('SELECT COUNT(*)::int AS count FROM card_reviews WHERE card_id = $1', [card_id])).count).to.equal(0);
+  });
+
+  it('protects study endpoints and rejects invalid ratings without writing progress', async () => {
+    const own = await makeManagedSet();
+    const other = await makeManagedSet(otherUserId);
+    const csrfToken = await managementToken(`/decks/${own.deck_id}/edit`);
+    const request = { cardId: own.card_id, rating: 'hard', csrfToken,
+      requestId: require('node:crypto').randomUUID(), lastReviewedAt: null };
+    expect(await agent.get(`/decks/${other.deck_id}/study`)).to.have.status(404);
+    expect(await agent.post(`/decks/${other.deck_id}/study/reviews`).send(request)).to.have.status(404);
+    expect(await agent.post(`/decks/${own.deck_id}/study/reviews`).send({ ...request, cardId: other.card_id })).to.have.status(404);
+    expect(await agent.post(`/decks/${own.deck_id}/study/reviews`).send({ ...request, csrfToken: '' })).to.have.status(403);
+    expect(await chai.request(app).post(`/decks/${own.deck_id}/study/reviews`).redirects(0).send(request)).to.have.header('location', '/login');
+    for (const invalid of [ { rating: 'wrong' }, { rating: '__proto__' }, { cardId: -1 },
+      { cardId: 2147483648 }, { lastReviewedAt: 'invalid' }, { requestId: 'invalid' } ]) {
+      expect(await agent.post(`/decks/${own.deck_id}/study/reviews`).send({ ...request, ...invalid })).to.have.status(400);
+    }
+    expect(await db.oneOrNone('SELECT * FROM user_card_progress WHERE card_id = $1', [own.card_id])).to.equal(null);
+    const accepted = await agent.post(`/decks/${own.deck_id}/study/reviews`).send(request);
+    expect(accepted).to.have.status(200);
+    const progress = await db.one('SELECT * FROM user_card_progress WHERE card_id = $1', [own.card_id]);
+    expect(progress.next_review_at - progress.last_reviewed_at).to.equal(6 * 3600000);
+    const fresh = await makeManagedSet();
+    expect(await agent.post(`/decks/${fresh.deck_id}/study/reviews`).send({ ...request, cardId: fresh.card_id,
+      rating: 'easy', requestId: require('node:crypto').randomUUID() })).to.have.status(200);
+    const easy = await db.one('SELECT * FROM user_card_progress WHERE card_id = $1', [fresh.card_id]);
+    expect(easy.next_review_at - easy.last_reviewed_at).to.equal(4 * 86400000);
   });
 
   it('does not expose another user’s sets', async () => {
