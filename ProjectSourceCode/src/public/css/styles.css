@@ -205,3 +205,50 @@ html:has(.set-dialog[open]) { overflow: hidden; }
 .light-mode .profile-close { color: #363659; }
 .light-mode .profile-streaks p { background: #c2c6e3; color: #363659; }
 .light-mode .profile-streaks strong { color: #21213b; }
+/* Study presentation; rating controls can extend the controls below the card. */
+.study-session { margin: 2rem 0; }
+.study-session [hidden] { display: none !important; }
+.study-progress { display: flex; justify-content: space-between; flex-wrap: wrap; gap: .5rem; color: #c2c2d9; font-size: .9rem; }
+.study-session progress { display: block; width: 100%; height: .5rem; margin: .75rem 0 1.5rem; accent-color: #a39cf7; }
+.study-card { perspective: 1400px; cursor: pointer; border-radius: 1.25rem; touch-action: manipulation; }
+.study-card-inner { display: grid; transform-style: preserve-3d; transition: transform 300ms ease; }
+.study-card.is-flipped .study-card-inner { transform: rotateY(180deg); }
+.study-card.is-resetting .study-card-inner { transition: none; }
+.study-face { grid-area: 1 / 1; min-width: 0; min-height: 320px; padding: clamp(1.25rem, 4vw, 3rem); border: 1px solid #505077; border-radius: 1.25rem; background: #21213b; backface-visibility: hidden; -webkit-backface-visibility: hidden; box-shadow: 0 12px 30px rgb(0 0 0 / 15%); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; overflow-wrap: anywhere; }
+.study-face > div { width: 100%; min-width: 0; }
+.study-back { transform: rotateY(180deg); background: #292944; }
+.study-label { font-size: .75rem; text-transform: uppercase; letter-spacing: .14em; color: #c2c2d9; margin-bottom: 1.5rem; }
+.study-face .card-text { font-size: clamp(1.1rem, 2.5vw, 1.5rem); margin: 0; }
+.study-face .card-image-preview { margin: 0 auto 1rem; max-height: 280px; }
+.study-hint { text-align: center; color: #c2c2d9; font-size: .85rem; margin: 1rem 0; }
+.study-controls { display: flex; justify-content: center; gap: .75rem; flex-wrap: wrap; min-height: 60px; align-items: start; }
+.study-controls .create-button, .study-controls .submit-button { width: auto; margin: 0; }
+.study-card:focus-visible, .study-controls button:focus-visible, #study-restart:focus-visible, #study-all-cards summary:focus-visible { outline: 3px solid #a39cf7; outline-offset: 4px; }
+.study-complete { text-align: center; }
+.study-complete .submit-button { width: auto; }
+#study-all-cards { margin: 2rem 0; }
+#study-all-cards summary { cursor: pointer; font-weight: 600; margin-bottom: 1rem; }
+.light-mode .study-face { background: #d0ddec; border-color: #9195b0; }
+.light-mode .study-back { background: #c2c6e3; }
+.light-mode .study-label, .light-mode .study-progress, .light-mode .study-hint { color: #363659; }
+@media (max-width: 480px) {
+  .study-face { min-height: 280px; }
+  .study-controls { gap: .5rem; }
+  .study-controls button { padding: .75rem; flex: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .study-card-inner { transition: none; }
+}
+
+/* Modal study view hides page controls and traps focus in the study session. */
+.study-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem; }
+.study-toolbar .card-heading, .study-toolbar .create-button { margin: 0; }
+.study-focus-open { overflow: hidden; }
+.study-focus-dialog { position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; padding: clamp(1rem, 4vw, 3rem); box-sizing: border-box; overflow-y: auto; border: 0; background: #121226; color: #f4f3ff; color-scheme: dark; }
+.study-focus-dialog::backdrop { background: #121226; }
+.study-focus-dialog .study-session { width: min(100%, 1100px); margin: 0 auto; }
+.study-focus-dialog .study-face { min-height: clamp(280px, 55dvh, 650px); }
+.study-focus-dialog .study-face .card-text { font-size: clamp(1.25rem, 3vw, 2rem); }
+.study-focus-dialog .study-face .card-image-preview { max-height: 40dvh; }
+.light-mode .study-focus-dialog { background: #f2f7fa; color: #21213b; color-scheme: light; }
+.light-mode .study-focus-dialog::backdrop { background: #f2f7fa; }
