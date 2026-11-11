@@ -78,3 +78,17 @@ New databases apply `003_card_reviews.sql` during initialization. The tests appl
 it automatically to their isolated database. The suite includes scheduler tests,
 HTTP/database tests for persistence, ownership and retries, and jsdom interaction
 tests. Native browser fullscreen and visual animation still require a browser check.
+
+## Progress dashboard
+
+Open **Progress** in the navigation or visit `/progress` while signed in. The page
+shows new/due cards, reviews today, cards reviewed at least once, and self-reported
+recall over the last 14 days. A daily activity chart has a table alternative, and
+per-set coverage links back to studying. Recall is the percentage of saved ratings
+that were Hard, Good, or Easy; it is not an objective test score or mastery estimate.
+
+Dates follow the user's saved timezone (UTC if unavailable). Repeated ratings count
+as separate reviews, while card coverage counts each card once. Statistics cover
+current sets: deleting a card removes its progress and review history. This page
+uses the existing progress and review-history tables; no additional migration is
+needed beyond the study migration above.

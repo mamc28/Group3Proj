@@ -74,6 +74,7 @@ app.get('/register', (req, res) => {
   res.render('pages/register');
 });
 app.use('/decks', auth, flashcardRoutes);
+app.use('/progress', auth, require('./progressRoutes'));
 app.get('/home', auth, async (req, res) => {
   try {
     const userId = req.session.user.user_id;
