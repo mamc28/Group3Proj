@@ -252,3 +252,60 @@ html:has(.set-dialog[open]) { overflow: hidden; }
 .study-focus-dialog .study-face .card-image-preview { max-height: 40dvh; }
 .light-mode .study-focus-dialog { background: #f2f7fa; color: #21213b; color-scheme: light; }
 .light-mode .study-focus-dialog::backdrop { background: #f2f7fa; }
+
+.study-ratings { display: flex; justify-content: center; flex-wrap: wrap; gap: .75rem; margin-top: 1rem; }
+.study-ratings p { flex-basis: 100%; text-align: center; margin: 0; }
+.study-ratings .create-button { flex: 1 1 120px; margin: 0; min-height: 64px; }
+.study-ratings button span { display: block; font-size: .8rem; font-weight: 400; }
+.study-ratings button:focus-visible, .study-toolbar button:focus-visible { outline: 3px solid #a39cf7; outline-offset: 4px; }
+.study-ratings [data-rating="again"] { border-color: #c87883; }
+.study-ratings [data-rating="hard"] { border-color: #c4a16a; }
+.study-ratings [data-rating="good"] { border-color: #77b59a; }
+.study-ratings [data-rating="easy"] { border-color: #8b9fdf; }
+
+/* Progress is derived from saved reviews and current card schedules. */
+.progress-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.progress-stat { margin: 0; padding: 1.25rem; }
+.progress-stat h2 { font-size: .9rem; color: #c2c2d9; margin: 0 0 .75rem; }
+.progress-number { font-size: clamp(1.75rem, 3vw, 2.5rem); font-weight: 750; line-height: 1.2; margin: 0 0 .75rem; }
+.progress-number span { font-size: 1rem; font-weight: 400; white-space: nowrap; }
+.progress-stat .card-description { font-size: .8rem; margin: 0; }
+.progress-next, .progress-section-heading, .progress-set-heading, .progress-set-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+.progress-next { background: linear-gradient(120deg, #363659, #21213b); }
+.progress-next > div { flex: 1 1 260px; }
+.progress-content a { color: inherit; }
+.progress-content .create-button { display: inline-block; cursor: pointer; text-decoration: none; margin: 0; white-space: nowrap; }
+.progress-next .card-description { margin: 0; }
+.progress-section-heading .card-description { margin-bottom: .5rem; }
+.progress-activity { margin: 1.5rem 0 1rem; }
+.progress-chart { display: grid; grid-template-columns: repeat(14, minmax(0, 1fr)); gap: .5rem; }
+.progress-day { min-width: 0; text-align: center; }
+.progress-bar-count { font-size: .75rem; color: #c2c2d9; }
+.progress-bar-track { display: flex; align-items: flex-end; height: 140px; border-bottom: 1px solid #6868a6; }
+.progress-bar-fill { display: block; width: 100%; border-radius: .3rem .3rem 0 0; background: #a39cf7; }
+.progress-day-label { display: block; margin-top: .5rem; font-size: .65rem; color: #c2c2d9; }
+.progress-activity figcaption { font-size: .8rem; margin-top: .75rem; }
+.progress-activity-details summary { cursor: pointer; }
+.progress-table-scroll { overflow-x: auto; }
+.progress-table { width: 100%; border-collapse: collapse; margin-top: .75rem; }
+.progress-table th, .progress-table td { padding: .5rem; text-align: left; border-bottom: 1px solid #505077; }
+.progress-table tbody th { font-weight: 400; }
+.progress-note { font-size: .8rem; margin-top: 1rem; }
+.progress-set { border-top: 1px solid #505077; padding: 1.25rem 0; }
+.progress-set:last-child { padding-bottom: 0; }
+.progress-set h3 { font-size: 1.1rem; margin: 0; overflow-wrap: anywhere; min-width: 0; }
+.progress-set progress { display: block; width: 100%; height: .6rem; accent-color: #a39cf7; margin: 1rem 0; }
+.progress-set-footer .card-description { margin: 0; font-size: .85rem; flex: 1 1 240px; }
+.progress-content summary:focus-visible { outline: 3px solid #a39cf7; outline-offset: 4px; }
+.light-mode .progress-stat h2, .light-mode .progress-bar-count, .light-mode .progress-day-label { color: #363659; }
+.light-mode .progress-next { background: linear-gradient(120deg, #c2c6e3, #d0ddec); }
+.light-mode .progress-bar-fill { background: #655cc6; }
+.light-mode .progress-table th, .light-mode .progress-table td, .light-mode .progress-set { border-color: #9195b0; }
+@media (max-width: 1000px) { .progress-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) {
+  .progress-content .dashboard-card { padding: 1.25rem; }
+  .progress-chart { gap: .2rem; }
+  .progress-day-label { writing-mode: vertical-rl; margin: .5rem auto 0; }
+  .progress-set-heading { align-items: flex-start; }
+}
+@media (max-width: 360px) { .progress-summary { grid-template-columns: 1fr; } }

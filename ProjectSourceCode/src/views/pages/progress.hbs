@@ -1,0 +1,79 @@
+<header class="sidebar">
+  <a class="brand" href="/home">scramble.</a>
+  <p class="sidebar-description">{{username}} — Your study space</p>
+  <nav aria-label="Main navigation">
+    <ul class="navigation-list">
+      <li><a class="navigation-item" href="/home">Home</a></li>
+      <li><a class="navigation-item navigation-active" href="/progress" aria-current="page">Progress</a></li>
+      <li><a class="navigation-item" href="/exams">Exams</a></li>
+      <li><a class="navigation-item" href="/friends">Friends</a></li>
+    </ul>
+    <a class="logout-link" href="/logout">Log out</a>
+  </nav>
+  <div class="sidebar-theme-control">{{> theme-toggle}}</div>
+</header>
+
+<main class="dashboard-content progress-content" id="main-content">
+  <h1 class="welcome-heading">Your progress</h1>
+  <p class="welcome-description">See what you’ve practiced and what’s ready for another look.</p>
+  {{#if loadFailed}}
+    <section class="dashboard-card" role="alert">
+      <h2 class="card-heading">Progress is unavailable</h2>
+      <p>We couldn’t load your study data. Please try again.</p>
+      <a class="create-button" href="/progress">Try again</a>
+    </section>
+  {{else}}
+    <section class="progress-summary" aria-label="Study overview">
+      <article class="dashboard-card progress-stat"><h2>Ready to study</h2><p class="progress-number" id="ready-count">{{totals.ready}}</p><p class="card-description">{{totals.new}} new cards included</p></article>
+      <article class="dashboard-card progress-stat"><h2>Reviews today</h2><p class="progress-number" id="today-count">{{todayReviews}}</p><p class="card-description">Each saved rating counts as a review</p></article>
+      <article class="dashboard-card progress-stat"><h2>Cards studied</h2><p class="progress-number" id="studied-count">{{totals.studied}} <span>of {{totals.total}}</span></p><p class="card-description">Cards reviewed at least once</p></article>
+      <article class="dashboard-card progress-stat"><h2>Recall · last 14 days</h2><p class="progress-number" id="recall-percent">{{#if hasReviews}}{{recallPercent}}%{{else}}—{{/if}}</p><p class="card-description">Rated Hard, Good, or Easy</p></article>
+    </section>
+
+    <section class="dashboard-card progress-next" aria-labelledby="next-heading">
+      <div>
+        <h2 class="card-heading" id="next-heading">{{#if studySet}}Ready for your next review?{{else}}All caught up for now{{/if}}</h2>
+        <p class="card-description">{{#if studySet}}Start with {{studySet.title}}. You have {{totals.ready}} cards ready across your sets.{{else}}{{#if nextReview}}Your next scheduled review is {{nextReview}} ({{timezone}}).{{else}}Create a set to start building your study history.{{/if}}{{/if}}</p>
+      </div>
+      {{#if studySet}}<a class="create-button" href="/decks/{{studySet.deck_id}}">Start studying</a>{{else}}<a class="create-button" href="/decks/new">Create a set</a>{{/if}}
+    </section>
+
+    <section class="dashboard-card" aria-labelledby="activity-heading">
+      <div class="progress-section-heading">
+        <div><h2 class="card-heading" id="activity-heading">Your last 14 days</h2><p class="card-description">{{recentReviews}} reviews · {{activeDays}} active days · {{totalReviews}} total saved reviews</p></div>
+        <span class="card-description">{{timezone}}</span>
+      </div>
+      {{#unless hasReviews}}<p class="card-description">No reviews in this period yet. Reveal an answer and choose a rating to start tracking your activity.</p>{{/unless}}
+      <figure class="progress-activity">
+        <div class="progress-chart" aria-hidden="true">
+          {{#each activity}}
+            <div class="progress-day" title="{{label}}: {{reviews}} reviews"><span class="progress-bar-count">{{reviews}}</span><div class="progress-bar-track"><span class="progress-bar-fill" style="height: {{barHeight}}%"></span></div><span class="progress-day-label">{{label}}</span></div>
+          {{/each}}
+        </div>
+        <figcaption class="card-description">Daily saved reviews, including repeat attempts on the same card.</figcaption>
+      </figure>
+      <details class="progress-activity-details"><summary>View daily review counts</summary>
+        <div class="progress-table-scroll"><table class="progress-table"><caption class="visually-hidden">Daily review counts for the last 14 days</caption><thead><tr><th scope="col">Date</th><th scope="col">Reviews</th></tr></thead><tbody>{{#each activity}}<tr><th scope="row">{{day}}</th><td>{{reviews}}</td></tr>{{/each}}</tbody></table></div>
+      </details>
+      <p class="card-description progress-note">Recall is your self-reported recall: {{recentRecalled}} of {{recentReviews}} reviews rated Hard, Good, or Easy. Again means you didn’t recall the answer.</p>
+    </section>
+
+    <section class="dashboard-card" aria-labelledby="sets-heading">
+      <h2 class="card-heading" id="sets-heading">Progress by set</h2>
+      <p class="card-description">Coverage shows cards reviewed at least once. It doesn’t measure mastery.</p>
+      <div class="progress-set-list">
+      {{#each sets}}
+        <article class="progress-set">
+          <div class="progress-set-heading"><h3><a href="/decks/{{deck_id}}">{{title}}</a></h3><span class="card-description">{{studied}} / {{total}} studied</span></div>
+          <progress value="{{studied}}" max="{{#if total}}{{total}}{{else}}1{{/if}}" aria-label="Cards studied in {{title}}">{{coverage}}%</progress>
+          <div class="progress-set-footer"><p class="card-description">{{new}} new · {{due}} due for review{{#if nextReview}} · Next scheduled: {{nextReview}}{{/if}}</p><a class="create-button" href="/decks/{{deck_id}}">{{#if ready}}Study set{{else}}View set{{/if}}</a></div>
+        </article>
+      {{else}}
+        <p class="card-description">You don’t have any sets yet. Create your first set, then rate cards to see your progress here.</p>
+        <a class="create-button" href="/decks/new">Create your first set</a>
+      {{/each}}
+      </div>
+    </section>
+    <p class="card-description progress-note">Dates use {{timezone}}. Statistics reflect your current sets; deleting cards also removes their review history.</p>
+  {{/if}}
+</main>
