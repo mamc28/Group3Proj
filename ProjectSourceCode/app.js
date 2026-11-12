@@ -80,8 +80,18 @@ const auth = (req, res, next) => {
     // Default to login page.
     return res.redirect('/login');
   }
+  res.locals.isAuthenticated = true;
+  res.locals.username = req.session.user.username;
+  const path = req.originalUrl.split('?')[0];
+  res.locals.isHomePage = path === '/home';
+  res.locals.isProgressPage = path === '/progress';
+  res.locals.isFriendsPage = path === '/friends';
+  res.locals.isExamsPage = path.startsWith('/exams');
+  res.locals.isContentPage = !res.locals.isHomePage && !res.locals.isProgressPage &&
+    !res.locals.isFriendsPage && !res.locals.isExamsPage;
   next();
 };
+app.use('/progress', auth, require('./src/progressRoutes'));
 app.get('/welcome', (req, res) => {
   res.status(200).json({
     status: 'success',

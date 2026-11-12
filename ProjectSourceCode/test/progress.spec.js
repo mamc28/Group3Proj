@@ -62,6 +62,22 @@ describe('Study progress page', () => {
     dom.window.close();
   });
 
+  it('uses the same navigation order and active page on authenticated views', async () => {
+    const paths = ['/home', '/decks/new', '/progress', '/friends', '/exams'];
+    const expected = ['Home', 'Content (coming soon)', 'Progress', 'Friends', 'Exams'];
+    for (const [index, path] of paths.entries()) {
+      const res = await agent.get(path);
+      expect(res).to.have.status(200);
+      const dom = new JSDOM(res.text);
+      const doc = dom.window.document;
+      const items = [...doc.querySelectorAll('.navigation-list .navigation-item')];
+      expect(items.map(item => item.textContent.trim())).to.deep.equal(expected);
+      expect(items.filter(item => item.classList.contains('navigation-active'))
+        .map(item => item.textContent.trim())).to.deep.equal([expected[index]]);
+      dom.window.close();
+    }
+  });
+
   it('counts new/due/studied cards and reviews in the account timezone and excludes other accounts', async () => {
     const own = await deck(userId, '<script>bad()</script>');
     const empty = await deck(userId, 'Empty set');

@@ -1,28 +1,15 @@
-<header>
- <nav class="navbar navbar-expand-sm border-bottom">
-   <div class="container">
-     {{> theme-toggle}}
-     <button
-       class="navbar-toggler ms-auto"
-       type="button"
-       data-bs-toggle="collapse"
-       data-bs-target="#navbar-collapse"
-       aria-controls="navbar"
-       aria-expanded="false"
-       aria-label="Toggle navigation">
-       <span class="navbar-toggler-icon"></span>
-     </button>
-     <div class="collapse navbar-collapse" id="navbar-collapse">
-       <ul class="navbar-nav me-auto">
-         <li class="nav-item">
-           <a class="nav-link" href="/home">Home</a>
-         </li>
-         <li class="nav-item"><a class="nav-link" href="/progress">Progress</a></li>
-       </ul>
-       <div class="nav-item me-1">
-         <a class="nav-link" href="/logout">Logout</a> <!-- TODO: For Logout, add a <a> tag with an attribute href to call the '/logout API -->
-       </div>
-     </div>
-   </div>
- </nav>
+<header class="sidebar">
+  <a class="brand" href="/home">scramble.</a>
+  <p class="sidebar-description">{{#if username}}{{username}}{{else}}Your name{{/if}} — Your study space</p>
+  <nav aria-label="Main navigation">
+    <ul class="navigation-list">
+      <li><a class="navigation-item{{#if isHomePage}} navigation-active{{/if}}" href="/home"{{#if isHomePage}} aria-current="page"{{/if}}>Home</a></li>
+      <li><button class="navigation-item navigation-placeholder{{#if isContentPage}} navigation-active{{/if}}" type="button" disabled>Content (coming soon)</button></li>
+      <li><a class="navigation-item{{#if isProgressPage}} navigation-active{{/if}}" href="/progress"{{#if isProgressPage}} aria-current="page"{{/if}}>Progress</a></li>
+      <li><a class="navigation-item{{#if isFriendsPage}} navigation-active{{/if}}" href="/friends"{{#if isFriendsPage}} aria-current="page"{{/if}}>Friends</a></li>
+      <li><a class="navigation-item{{#if isExamsPage}} navigation-active{{/if}}" href="/exams"{{#if isExamsPage}} aria-current="page"{{/if}}>Exams</a></li>
+    </ul>
+    <a class="logout-link" href="/logout">Log out</a>
+  </nav>
+  <div class="sidebar-theme-control">{{> theme-toggle}}</div>
 </header>

@@ -1,6 +1,7 @@
 const chai = require('chai');
 const chaiHttp = require('chai-http');
 const app = require('../src');
+const legacyApp = require('../app');
 const {db, pgp} = require('../src/db');
 const bcrypt = require('bcryptjs');
 
@@ -18,6 +19,14 @@ describe('GET /register', () => {
     const res = await chai.request(app).get('/register');
     expect(res).to.have.status(200);
     expect(res.text).to.include('Register');
+  });
+});
+
+describe('GET /progress on the legacy app entry point', () => {
+  it('uses the progress route and requires authentication', async () => {
+    const res = await chai.request(legacyApp).get('/progress').redirects(0);
+    expect(res).to.have.status(302);
+    expect(res).to.have.header('location', '/login');
   });
 });
 

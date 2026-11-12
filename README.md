@@ -36,11 +36,14 @@ docker compose -p lab10-tests -f ProjectSourceCode/docker-compose.test.yaml up -
 ```
 
 The database initialization scripts run only when the `group-project` volume is
-first created. If an existing database is missing login-related columns, apply
-the schema updates to that volume with:
+first created. The web service waits for PostgreSQL, then reapplies the idempotent
+schema scripts before starting, bringing existing volumes up to date without
+removing data.
+
+If you need to apply the schema updates manually, run:
 
 ```sh
-docker compose exec db sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TIMESTAMPTZ; ALTER TABLE user_stats ADD COLUMN IF NOT EXISTS last_login_date DATE;"'
+docker compose exec -T web node migrateStudy.js
 ```
 
 ## Confidence ratings and spaced review
@@ -67,15 +70,10 @@ not Anki's FSRS algorithm. Ratings are self-assessments: Again increments the
 incorrect counter; the other ratings increment the correct counter.
 Schedules and review history persist across visits; the displayed visit counter resets on reload.
 
-For an existing development database, apply the review-history migration once
-(the command is safe to rerun and preserves existing data):
-
-```sh
-docker compose exec -T web node migrateStudy.js
-```
-
-New databases apply `003_card_reviews.sql` during initialization. The tests apply
-it automatically to their isolated database. The suite includes scheduler tests,
+New databases apply all schema scripts during initialization, and the web
+service safely reapplies them on startup for existing databases. The tests apply
+the review-history migration automatically to their isolated database. The suite
+includes scheduler tests,
 HTTP/database tests for persistence, ownership and retries, and jsdom interaction
 tests. Native browser fullscreen and visual animation still require a browser check.
 
