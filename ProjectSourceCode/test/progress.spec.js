@@ -78,6 +78,28 @@ describe('Study progress page', () => {
     }
   });
 
+  it('shows the nearest upcoming exam on Home and links to the exams page', async () => {
+    const exams = await db.many(
+      `INSERT INTO exams(user_id, title, course, exam_date, start_time)
+       VALUES ($1, 'Later exam', 'Biology', (CURRENT_TIMESTAMP AT TIME ZONE 'America/Denver')::date + 8, '10:00'),
+              ($1, 'Soonest exam', 'Chemistry', (CURRENT_TIMESTAMP AT TIME ZONE 'America/Denver')::date + 2, '09:30')
+       RETURNING exam_id`,
+      [userId]
+    );
+    try {
+      const res = await agent.get('/home');
+      expect(res).to.have.status(200);
+      expect(res.text).to.include('Soonest exam');
+      expect(res.text).to.include('Chemistry');
+      expect(res.text).to.include('9:30 AM');
+      expect(res.text).to.include('href="/exams"');
+      expect(res.text).not.to.include('Later exam');
+      expect(res.text).to.include('In 2 days');
+    } finally {
+      await db.none('DELETE FROM exams WHERE exam_id IN ($1, $2)', exams.map(exam => exam.exam_id));
+    }
+  });
+
   it('counts new/due/studied cards and reviews in the account timezone and excludes other accounts', async () => {
     const own = await deck(userId, '<script>bad()</script>');
     const empty = await deck(userId, 'Empty set');

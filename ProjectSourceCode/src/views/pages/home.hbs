@@ -4,12 +4,17 @@
     <span class="calendar-icon" aria-hidden="true">&#128197;</span>
     <div class="exam-summary">
       <h2 class="exam-heading" id="exam-heading">Your next exam</h2>
-      <p class="exam-description">Your exam date and days remaining will appear here.</p>
-      <div class="exam-progress-track" role="progressbar" aria-label="Exam preparation: no exam added" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-        <span class="exam-progress-fill"></span>
-      </div>
+      {{#if nextExam}}
+        <p class="exam-description">
+          <a href="/exams">{{nextExam.title}}</a>
+          {{#if nextExam.course}} · {{nextExam.course}}{{/if}}
+          · {{nextExam.displayDate}}{{#if nextExam.displayTime}} at {{nextExam.displayTime}}{{/if}}
+        </p>
+      {{else}}
+        <p class="exam-description">No upcoming exams. Add one on the <a href="/exams">Exams page</a>.</p>
+      {{/if}}
     </div>
-    <span class="exam-status">No exam added yet</span>
+    <span class="exam-status">{{#if nextExam}}{{nextExam.countdown}}{{else}}No exam scheduled{{/if}}</span>
   </section>
 
   <div class="streak-container">

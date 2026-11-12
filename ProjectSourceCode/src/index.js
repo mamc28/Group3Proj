@@ -100,16 +100,31 @@ app.get('/home', auth, async (req, res) => {
        WHERE user_id = $1`,
       [userId]
     );
-
-    
-
+    const nextExam = await db.oneOrNone(
+      `SELECT e.title, e.course,
+              TO_CHAR(e.exam_date, 'FMMonth FMDD, YYYY') AS "displayDate",
+              TO_CHAR(e.start_time, 'FMHH12:MI AM') AS "displayTime",
+              e.exam_date - (CURRENT_TIMESTAMP AT TIME ZONE
+                COALESCE(NULLIF(u.timezone, ''), 'UTC'))::date AS "daysUntil"
+       FROM exams e
+       JOIN users u ON u.user_id = e.user_id
+       WHERE e.user_id = $1
+         AND e.exam_date >= (CURRENT_TIMESTAMP AT TIME ZONE
+           COALESCE(NULLIF(u.timezone, ''), 'UTC'))::date
+       ORDER BY e.exam_date ASC, e.start_time ASC NULLS LAST, e.exam_id ASC
+       LIMIT 1`,
+      [userId]
+    );
+    if (nextExam) {
+      nextExam.countdown = nextExam.daysUntil === 0 ? 'Today' :
+        nextExam.daysUntil === 1 ? 'Tomorrow' : `In ${nextExam.daysUntil} days`;
+    }
 
     res.render('pages/home', {
       isHome: true,
       username: req.session.user.username,
       recentSets,
-
-    
+      nextExam,
       currentStreak: streak ? streak.current_streak : 0,
       longestStreak: streak ? streak.longest_streak : 0,
       lastLoginDate: streak ? streak.last_login_date : null
