@@ -311,3 +311,10 @@ html:has(.set-dialog[open]) { overflow: hidden; }
   .progress-set-heading { align-items: flex-start; }
 }
 @media (max-width: 360px) { .progress-summary { grid-template-columns: 1fr; } }
+
+/* Friend requests: Accept / Decline buttons side by side. */
+.friend-actions { display: flex; gap: .5rem; }
+.friend-accept { background: #6868a6; border-color: #6868a6; }
+.friend-accept:hover { background: #7a7abd; }
+.friend-subheading { margin-top: 1.75rem; font-size: 1rem; }
+.light-mode .friend-accept { background: #a4a6c3; border-color: #9195b0; }
