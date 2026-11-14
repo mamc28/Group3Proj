@@ -225,11 +225,35 @@ app.get('/friends', auth, async (req, res) => {
        FROM friendships
        JOIN users ON users.user_id = friendships.friend_id
        WHERE friendships.user_id = $1
+         AND friendships.status = 'accepted'
        ORDER BY users.username`,
       [userId]
     );
 
-    // Only search when something was typed. Leaves out yourself and people already added.
+    // Requests other people sent you, waiting for you to accept or decline.
+    const incomingRequests = await db.any(
+      `SELECT users.user_id, users.username
+       FROM friendships
+       JOIN users ON users.user_id = friendships.user_id
+       WHERE friendships.friend_id = $1
+         AND friendships.status = 'pending'
+       ORDER BY friendships.created_at`,
+      [userId]
+    );
+
+    // Requests you sent that the other person hasn't answered yet.
+    const sentRequests = await db.any(
+      `SELECT users.user_id, users.username
+       FROM friendships
+       JOIN users ON users.user_id = friendships.friend_id
+       WHERE friendships.user_id = $1
+         AND friendships.status = 'pending'
+       ORDER BY friendships.created_at`,
+      [userId]
+    );
+
+    // Only search when something was typed. Leaves out yourself, your friends,
+    // and anyone you already have a request with (sent or received).
     let results = [];
     if (search) {
       results = await db.any(
@@ -238,6 +262,7 @@ app.get('/friends', auth, async (req, res) => {
          WHERE username ILIKE $1
            AND user_id <> $2
            AND user_id NOT IN (SELECT friend_id FROM friendships WHERE user_id = $2)
+           AND user_id NOT IN (SELECT user_id FROM friendships WHERE friend_id = $2)
          ORDER BY username
          LIMIT 10`,
         ['%' + search + '%', userId]
@@ -247,7 +272,7 @@ app.get('/friends', auth, async (req, res) => {
     // Profile pop-up: /friends?profile=<id> opens it, but only for someone on your friends list.
     let profile = null;
     const friend = friends.find(f => String(f.user_id) === req.query.profile);
-  
+
     if (friend) {
       // A streak only counts if they logged in today or yesterday, otherwise it shows 0.
       profile = await db.one(
@@ -280,7 +305,6 @@ app.get('/friends', auth, async (req, res) => {
       );
     }
 
-
     res.render('pages/friends', {
       isHome: true, // uses the same dashboard layout as the home page
       username: req.session.user.username,
@@ -288,6 +312,8 @@ app.get('/friends', auth, async (req, res) => {
       searched: search !== '',
       results,
       friends,
+      incomingRequests,
+      sentRequests,
       profile,
     });
   } catch (error) {
@@ -301,26 +327,59 @@ app.get('/friends', auth, async (req, res) => {
   }
 });
 
-// Add a friend from the search results.
-app.post('/friends/add', auth, async (req, res) => {
+// Send a friend request from the search results.
+app.post('/friends/request', auth, async (req, res) => {
   try {
     await db.none(
-      `INSERT INTO friendships (user_id, friend_id)
-       VALUES ($1, $2)
+      `INSERT INTO friendships (user_id, friend_id, status)
+       VALUES ($1, $2, 'pending')
        ON CONFLICT DO NOTHING`,
       [req.session.user.user_id, req.body.friend_id]
     );
   } catch (error) {
-    console.error('Add friend failed:', error.code);
+    console.error('Friend request failed:', error.code);
   }
   res.redirect('/friends');
 });
 
-// Remove a friend from the list.
+// Accept a friend request. Both people end up on each other's friends list.
+app.post('/friends/accept', auth, async (req, res) => {
+  const userId = req.session.user.user_id;
+  const senderId = req.body.friend_id;
+
+  try {
+    await db.tx(async t => {
+      // Only accepts a request that was actually sent to you.
+      const accepted = await t.result(
+        `UPDATE friendships
+         SET status = 'accepted'
+         WHERE user_id = $1 AND friend_id = $2 AND status = 'pending'`,
+        [senderId, userId]
+      );
+
+      if (accepted.rowCount === 1) {
+        await t.none(
+          `INSERT INTO friendships (user_id, friend_id, status)
+           VALUES ($1, $2, 'accepted')
+           ON CONFLICT (user_id, friend_id) DO UPDATE SET status = 'accepted'`,
+          [userId, senderId]
+        );
+      }
+    });
+  } catch (error) {
+    console.error('Accept friend request failed:', error.code);
+  }
+  res.redirect('/friends');
+});
+
+// Decline a request, cancel a request you sent, or delete a friend.
+// Removes the connection in both directions, so it disappears for both people.
 app.post('/friends/remove', auth, async (req, res) => {
   try {
     await db.none(
-      'DELETE FROM friendships WHERE user_id = $1 AND friend_id = $2',
+      `DELETE FROM friendships
+       WHERE (user_id = $1 AND friend_id = $2)
+          OR (user_id = $2 AND friend_id = $1)`,
       [req.session.user.user_id, req.body.friend_id]
     );
   } catch (error) {

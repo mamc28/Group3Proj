@@ -15,13 +15,51 @@
         {{#each results}}
           <li class="friend-row">
             <span>{{username}}</span>
-            <form action="/friends/add" method="POST">
+            <form action="/friends/request" method="POST">
               <input type="hidden" name="friend_id" value="{{user_id}}">
-              <button class="friend-button" type="submit">Add</button>
+              <button class="friend-button" type="submit">Send request</button>
             </form>
           </li>
         {{else}}
           <li class="card-description">No users found for "{{search}}".</li>
+        {{/each}}
+      </ul>
+    {{/if}}
+  </section>
+
+  <section class="dashboard-card" aria-labelledby="requests-heading">
+    <h2 class="card-heading" id="requests-heading">Friend requests</h2>
+    <ul class="friend-list">
+      {{#each incomingRequests}}
+        <li class="friend-row">
+          <span><strong>{{username}}</strong> wants to be friends</span>
+          <div class="friend-actions">
+            <form action="/friends/accept" method="POST">
+              <input type="hidden" name="friend_id" value="{{user_id}}">
+              <button class="friend-button friend-accept" type="submit">Accept</button>
+            </form>
+            <form action="/friends/remove" method="POST">
+              <input type="hidden" name="friend_id" value="{{user_id}}">
+              <button class="friend-button" type="submit">Decline</button>
+            </form>
+          </div>
+        </li>
+      {{else}}
+        <li class="card-description">No new friend requests.</li>
+      {{/each}}
+    </ul>
+
+    {{#if sentRequests.length}}
+      <h3 class="card-heading friend-subheading">Requests sent</h3>
+      <ul class="friend-list">
+        {{#each sentRequests}}
+          <li class="friend-row">
+            <span>{{username}} <span class="card-description">· Waiting for a reply</span></span>
+            <form action="/friends/remove" method="POST">
+              <input type="hidden" name="friend_id" value="{{user_id}}">
+              <button class="friend-button" type="submit">Cancel</button>
+            </form>
+          </li>
         {{/each}}
       </ul>
     {{/if}}
@@ -35,11 +73,12 @@
           <a class="friend-name" href="/friends?profile={{user_id}}">{{username}}</a>
           <form action="/friends/remove" method="POST">
             <input type="hidden" name="friend_id" value="{{user_id}}">
-            <button class="friend-button" type="submit">Remove</button>
+            <button class="friend-button" type="submit" data-name="{{username}}"
+                    onclick="return confirm('Delete ' + this.dataset.name + ' as a friend?');">Delete</button>
           </form>
         </li>
       {{else}}
-        <li class="card-description">You haven't added any friends yet. Search for a username above.</li>
+        <li class="card-description">You don't have any friends yet. Search for a username above to send a request.</li>
       {{/each}}
     </ul>
   </section>
@@ -58,6 +97,7 @@
         <p><strong>{{profile.current_streak}}</strong> day streak</p>
         <p><strong>{{profile.longest_streak}}</strong> longest streak</p>
       </div>
+
       <h3 class="card-heading">Flashcard sets</h3>
       <ul class="friend-list">
         {{#each profile.sets}}
