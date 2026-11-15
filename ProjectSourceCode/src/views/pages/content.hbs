@@ -1,0 +1,25 @@
+<main class="dashboard-content" id="main-content">
+  {{> message}}
+  <div class="content-header">
+    <h1 class="welcome-heading">Your content</h1>
+    <a class="create-button" href="/decks/new">+ Create new set</a>
+  </div>
+
+  <section class="dashboard-card" aria-labelledby="sets-heading">
+    <h2 class="card-heading" id="sets-heading">Your sets</h2>
+    {{#each sets}}
+      <article class="recent-set">
+        <h3 class="card-title"><a href="/decks/{{deck_id}}">{{title}}</a></h3>
+        {{#if description}}<p class="card-description">{{description}}</p>{{/if}}
+        <p class="card-description">{{card_count}} · Created {{created_on}}</p>
+        <nav class="set-actions" aria-label="Manage {{title}}">
+          <a href="/decks/{{deck_id}}/edit">Edit</a>
+          <a href="/decks/{{deck_id}}/rename">Rename</a>
+          <a class="danger-link" href="/decks/{{deck_id}}/delete">Delete</a>
+        </nav>
+      </article>
+    {{else}}
+      <p class="card-description">You haven't made any sets yet. Click "Create new set" to make your first one.</p>
+    {{/each}}
+  </section>
+</main>

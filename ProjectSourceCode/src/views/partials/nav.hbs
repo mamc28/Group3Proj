@@ -4,7 +4,7 @@
   <nav aria-label="Main navigation">
     <ul class="navigation-list">
       <li><a class="navigation-item{{#if isHomePage}} navigation-active{{/if}}" href="/home"{{#if isHomePage}} aria-current="page"{{/if}}>Home</a></li>
-      <li><button class="navigation-item navigation-placeholder{{#if isContentPage}} navigation-active{{/if}}" type="button" disabled>Content (coming soon)</button></li>
+      <li><a class="navigation-item{{#if isContentPage}} navigation-active{{/if}}" href="/content"{{#if isContentPage}} aria-current="page"{{/if}}>Content</a></li>
       <li><a class="navigation-item{{#if isProgressPage}} navigation-active{{/if}}" href="/progress"{{#if isProgressPage}} aria-current="page"{{/if}}>Progress</a></li>
       <li><a class="navigation-item{{#if isFriendsPage}} navigation-active{{/if}}" href="/friends"{{#if isFriendsPage}} aria-current="page"{{/if}}>Friends</a></li>
       <li><a class="navigation-item{{#if isExamsPage}} navigation-active{{/if}}" href="/exams"{{#if isExamsPage}} aria-current="page"{{/if}}>Exams</a></li>

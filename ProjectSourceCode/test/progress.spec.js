@@ -64,7 +64,7 @@ describe('Study progress page', () => {
 
   it('uses the same navigation order and active page on authenticated views', async () => {
     const paths = ['/home', '/decks/new', '/progress', '/friends', '/exams'];
-    const expected = ['Home', 'Content (coming soon)', 'Progress', 'Friends', 'Exams'];
+    const expected = ['Home', 'Content', 'Progress', 'Friends', 'Exams'];
     for (const [index, path] of paths.entries()) {
       const res = await agent.get(path);
       expect(res).to.have.status(200);
