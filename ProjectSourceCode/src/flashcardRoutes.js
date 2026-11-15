@@ -1,4 +1,5 @@
 const router = require('express').Router();
+const axios = require('axios');
 const { db } = require('./db');
 const { parseCardImage } = require('./cardImage');
 const { randomBytes, timingSafeEqual } = require('node:crypto');
@@ -21,6 +22,60 @@ router.use((req, res, next) => {
 router.param('id', (req, res, next, id) => {
   if (!/^[1-9]\d*$/.test(id) || Number(id) > 2147483647) return res.status(404).send('Set not found.');
   next();
+});
+
+//Look up a vocabulary word without saving a card.
+router.get('/dictionary', async (req, res) => {
+    const word = typeof req.query.word === 'string'
+        ? req.query.word.trim()
+        : '';
+
+    if (!word || word.length > 100) {
+        return res.status(400).json({
+            message: 'Enter a word up to 100 characters.',
+        });
+    }
+
+    try {
+        const response = await axios.get(
+            `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`,
+            { timeout: 8000 }
+        );
+
+        const entry = response.data?.[0];
+
+        const meaning = entry?.meanings?.find(item =>
+            item.definitions?.some(item =>
+                typeof item.definition === 'string' && item.definition.trim()
+            )
+        );
+
+        const definition = meaning?.definitions?.find(item =>
+            typeof item.definition === 'string' && item.definition.trim()
+        );
+
+        if (!definition) {
+            return res.status(404).json({
+                message: 'No definition found. Try another word.',
+            });
+        }
+
+        return res.json({
+            word: entry.word || word,
+            partOfSpeeach: meaning.partOfSpeech || '',
+            definition: definition.definition,
+        });
+    } catch (error) {
+        if (error.response?.status === 404) {
+            return res.status(404).json({
+                message: 'No definition found. Check the spelling.',
+            });
+        }
+
+        return res.status(502).json({
+            message: 'Dictionary lookup is unavailable. Please try again.',
+        });
+    }
 });
 
 router.get('/new', (req, res) => {
