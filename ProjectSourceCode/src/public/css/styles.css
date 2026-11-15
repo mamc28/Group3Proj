@@ -318,3 +318,8 @@ html:has(.set-dialog[open]) { overflow: hidden; }
 .friend-accept:hover { background: #7a7abd; }
 .friend-subheading { margin-top: 1.75rem; font-size: 1rem; }
 .light-mode .friend-accept { background: #a4a6c3; border-color: #9195b0; }
+
+/* Content page: heading with the create button beside it. */
+.content-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; }
+.content-header .welcome-heading { margin: 0; }
+.content-header .create-button { margin: 0; }

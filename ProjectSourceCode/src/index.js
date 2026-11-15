@@ -1,448 +1,482 @@
-// *****************************************************
-// <!-- Section 1 : Import Dependencies -->
-// *****************************************************
+  // *****************************************************
+  // <!-- Section 1 : Import Dependencies -->
+  // *****************************************************
 
-const express = require('express'); // To build an application server or API
-const app = express();
-const handlebars = require('express-handlebars'); //to enable express to work with handlebars
-const path = require('path');
-const bodyParser = require('body-parser');
-const session = require('express-session'); // To set the session object. To store or access session data, use the `req.session`, which is (generally) serialized as JSON by the store.
-const bcrypt = require('bcryptjs'); //  To hash passwords
-const { db } = require('./db');
-const flashcardRoutes = require('./flashcardRoutes');
-const examRoutes = require('./examRoutes');
+  const express = require('express'); // To build an application server or API
+  const app = express();
+  const handlebars = require('express-handlebars'); //to enable express to work with handlebars
+  const path = require('path');
+  const bodyParser = require('body-parser');
+  const session = require('express-session'); // To set the session object. To store or access session data, use the `req.session`, which is (generally) serialized as JSON by the store.
+  const bcrypt = require('bcryptjs'); //  To hash passwords
+  const { db } = require('./db');
+  const flashcardRoutes = require('./flashcardRoutes');
+  const examRoutes = require('./examRoutes');
 
-// *****************************************************
-// <!-- Section 2 : Connect to DB -->
-// *****************************************************
+  // *****************************************************
+  // <!-- Section 2 : Connect to DB -->
+  // *****************************************************
 
-// create `ExpressHandlebars` instance and configure the layouts and partials dir.
-const hbs = handlebars.create({
-  extname: 'hbs',
-  layoutsDir: __dirname + '/views/layouts',
-  partialsDir: __dirname + '/views/partials',
-});
-
-// *****************************************************
-// <!-- Section 3 : App Settings -->
-// *****************************************************
-
-// Register `hbs` as our view engine using its bound `engine()` function.
-app.engine('hbs', hbs.engine);
-app.set('view engine', 'hbs');
-app.set('views', path.join(__dirname, 'views'));
-app.use(express.static(path.join(__dirname, 'public')));
-app.use(bodyParser.json({ limit: '8mb' })); // specify the usage of JSON for parsing request body.
-
-// initialize session variables
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET,
-    saveUninitialized: false,
-    resave: false,
-  })
-);
-
-app.use(
-  bodyParser.urlencoded({
-    extended: true,
-    limit: '8mb',
-  })
-);
-
-// *****************************************************
-// <!-- Section 4 : API Routes -->
-// *****************************************************
-// Authentication Middleware.
-const auth = (req, res, next) => {
-  if (!req.session.user) {
-    // Default to login page.
-    return res.redirect('/login');
-  }
-  res.locals.isAuthenticated = true;
-  res.locals.username = req.session.user.username;
-  const path = req.originalUrl.split('?')[0];
-  res.locals.isHomePage = path === '/home';
-  res.locals.isProgressPage = path === '/progress';
-  res.locals.isFriendsPage = path === '/friends';
-  res.locals.isExamsPage = path.startsWith('/exams');
-  res.locals.isContentPage = !res.locals.isHomePage && !res.locals.isProgressPage &&
-    !res.locals.isFriendsPage && !res.locals.isExamsPage;
-  next();
-};
-
-app.get('/', (req, res) => {
-  res.redirect(req.session.user ? '/home' : '/login');
-});
-
-// Register authenticated routes.
-app.use('/exams', auth, examRoutes);
-
-app.get('/register', (req, res) => {
-  res.render('pages/register');
-});
-app.use('/decks', auth, flashcardRoutes);
-app.use('/progress', auth, require('./progressRoutes'));
-app.get('/home', auth, async (req, res) => {
-  try {
-    const userId = req.session.user.user_id;
-
-    const recentSets = await db.any(
-      `SELECT d.deck_id, d.title AS name, COUNT(f.card_id)::int AS "cardCount"
-       FROM decks d LEFT JOIN flashcards f ON f.deck_id = d.deck_id
-       WHERE d.user_id = $1 GROUP BY d.deck_id ORDER BY d.created_at DESC, d.deck_id DESC`,
-      [userId]
-    );
-    const streak = await db.oneOrNone(
-      `SELECT current_streak, longest_streak, last_login_date
-       FROM user_stats
-       WHERE user_id = $1`,
-      [userId]
-    );
-
-    
-
-
-    res.render('pages/home', {
-      isHome: true,
-      username: req.session.user.username,
-      recentSets,
-
-    
-      currentStreak: streak ? streak.current_streak : 0,
-      longestStreak: streak ? streak.longest_streak : 0,
-      lastLoginDate: streak ? streak.last_login_date : null
-    });
-  } catch (error) {
-    console.error('Unable to load sets:', error.code);
-    res.status(500).render('pages/home', {
-      isHome: true, username: req.session.user.username,
-      message: 'Unable to load your sets. Please try again.', error: true,
-      currentStreak: 0,
-      longestStreak: 0,
-    });
-  }
-});
-app.post('/register', async (req, res) => {
-  const { username, email, password } = req.body;
-  if (typeof username !== 'string' || !username.trim() || username.length > 50 ||
-      typeof email !== 'string' || !email.trim() || email.length > 100 ||
-      typeof password !== 'string' || !password) {
-    return res.status(400).render('pages/register', {
-      message: 'Enter a username, email, and password.', error: true,
-    });
-  }
-  try {
-    const hash = await bcrypt.hash(password, 10);
-    await db.none(
-      'INSERT INTO users(username, email, password_hash) VALUES($1, $2, $3)',
-      [username.trim(), email.trim(), hash]
-    );
-    return res.redirect('/login');
-  } catch (error) {
-    const duplicate = error.code === '23505';
-    console.error('Registration failed:', error.code);
-    return res.status(duplicate ? 409 : 500).render('pages/register', {
-      message: duplicate ? 'That username or email is already registered.' :
-        'Unable to register. Please try again after the database is ready.',
-      error: true,
-    });
-  }
-});
-app.all('/login', (req, res, next) => {
-  res.locals.isLogin = true;
-  next();
-});
-app.get('/login', (req, res) => {
-  res.render('pages/login');
-});
-app.post('/login', async (req, res) => {
-  const { username, password } = req.body;
-  if (typeof username !== 'string' || typeof password !== 'string' || !username || !password) {
-    return res.status(400).render('pages/login', {
-      message: 'Enter your username and password.', error: true,
-    });
-  }
-  try {
-    const user = await db.oneOrNone('SELECT * FROM users WHERE username = $1', [username.trim()]);
-    if (!user || !(await bcrypt.compare(password, user.password_hash))) {
-      return res.status(401).render('pages/login', {
-        message: 'Incorrect username or password.', error: true,
-      });
-    }
-    //Updating login time for engagement stuff.
-    await db.none(
-      `UPDATE users
-       SET last_login = CURRENT_TIMESTAMP
-       WHERE user_id = $1`,
-      [user.user_id]
-    );
-    // Call streak function
-    await updateLoginStreak(user.user_id);
-    req.session.regenerate(err => {
-      if (err) return loginSessionError(res);
-      req.session.user = { user_id: user.user_id, username: user.username };
-      req.session.save(err => {
-        if (err) return loginSessionError(res);
-        return res.redirect('/home');
-      });
-    });
-  } catch (error) {
-    console.error('Login failed:', error.code);
-    return loginSessionError(res);
-  }
-});
-function loginSessionError(res) {
-  return res.status(500).render('pages/login', {
-    message: 'Unable to log in. Please try again later.', error: true,
+  // create `ExpressHandlebars` instance and configure the layouts and partials dir.
+  const hbs = handlebars.create({
+    extname: 'hbs',
+    layoutsDir: __dirname + '/views/layouts',
+    partialsDir: __dirname + '/views/partials',
   });
-}
-app.get('/logout', (req, res) => {
-    req.session.destroy((err) => {
-        if (err) {
-            console.error(err);
-            return res.render('pages/logout', {
-                message: "Unable to logout.",
-                error: true
-            });
-        }
-    res.render('pages/logout', {
-        message: "Logged out Successfully.",        
-        error: false
+
+  // *****************************************************
+  // <!-- Section 3 : App Settings -->
+  // *****************************************************
+
+  // Register `hbs` as our view engine using its bound `engine()` function.
+  app.engine('hbs', hbs.engine);
+  app.set('view engine', 'hbs');
+  app.set('views', path.join(__dirname, 'views'));
+  app.use(express.static(path.join(__dirname, 'public')));
+  app.use(bodyParser.json({ limit: '8mb' })); // specify the usage of JSON for parsing request body.
+
+  // initialize session variables
+  app.use(
+    session({
+      secret: process.env.SESSION_SECRET,
+      saveUninitialized: false,
+      resave: false,
+    })
+  );
+
+  app.use(
+    bodyParser.urlencoded({
+      extended: true,
+      limit: '8mb',
+    })
+  );
+
+  // *****************************************************
+  // <!-- Section 4 : API Routes -->
+  // *****************************************************
+  // Authentication Middleware.
+  const auth = (req, res, next) => {
+    if (!req.session.user) {
+      // Default to login page.
+      return res.redirect('/login');
+    }
+    res.locals.isAuthenticated = true;
+    res.locals.username = req.session.user.username;
+    const path = req.originalUrl.split('?')[0];
+    res.locals.isHomePage = path === '/home';
+    res.locals.isProgressPage = path === '/progress';
+    res.locals.isFriendsPage = path === '/friends';
+    res.locals.isExamsPage = path.startsWith('/exams');
+    res.locals.isContentPage = !res.locals.isHomePage && !res.locals.isProgressPage &&
+      !res.locals.isFriendsPage && !res.locals.isExamsPage;
+    next();
+  };
+
+  app.get('/', (req, res) => {
+    res.redirect(req.session.user ? '/home' : '/login');
+  });
+
+  // Register authenticated routes.
+  app.use('/exams', auth, examRoutes);
+
+  app.get('/register', (req, res) => {
+    res.render('pages/register');
+  });
+  app.use('/decks', auth, flashcardRoutes);
+  app.use('/progress', auth, require('./progressRoutes'));
+  app.get('/home', auth, async (req, res) => {
+    try {
+      const userId = req.session.user.user_id;
+
+      const recentSets = await db.any(
+        `SELECT d.deck_id, d.title AS name, COUNT(f.card_id)::int AS "cardCount"
+        FROM decks d LEFT JOIN flashcards f ON f.deck_id = d.deck_id
+        WHERE d.user_id = $1 GROUP BY d.deck_id ORDER BY d.created_at DESC, d.deck_id DESC`,
+        [userId]
+      );
+      const streak = await db.oneOrNone(
+        `SELECT current_streak, longest_streak, last_login_date
+        FROM user_stats
+        WHERE user_id = $1`,
+        [userId]
+      );
+
+      
+
+
+      res.render('pages/home', {
+        isHome: true,
+        username: req.session.user.username,
+        recentSets,
+
+      
+        currentStreak: streak ? streak.current_streak : 0,
+        longestStreak: streak ? streak.longest_streak : 0,
+        lastLoginDate: streak ? streak.last_login_date : null
+      });
+    } catch (error) {
+      console.error('Unable to load sets:', error.code);
+      res.status(500).render('pages/home', {
+        isHome: true, username: req.session.user.username,
+        message: 'Unable to load your sets. Please try again.', error: true,
+        currentStreak: 0,
+        longestStreak: 0,
+      });
+    }
+  });
+  app.post('/register', async (req, res) => {
+    const { username, email, password } = req.body;
+    if (typeof username !== 'string' || !username.trim() || username.length > 50 ||
+        typeof email !== 'string' || !email.trim() || email.length > 100 ||
+        typeof password !== 'string' || !password) {
+      return res.status(400).render('pages/register', {
+        message: 'Enter a username, email, and password.', error: true,
+      });
+    }
+    try {
+      const hash = await bcrypt.hash(password, 10);
+      await db.none(
+        'INSERT INTO users(username, email, password_hash) VALUES($1, $2, $3)',
+        [username.trim(), email.trim(), hash]
+      );
+      return res.redirect('/login');
+    } catch (error) {
+      const duplicate = error.code === '23505';
+      console.error('Registration failed:', error.code);
+      return res.status(duplicate ? 409 : 500).render('pages/register', {
+        message: duplicate ? 'That username or email is already registered.' :
+          'Unable to register. Please try again after the database is ready.',
+        error: true,
+      });
+    }
+  });
+  app.all('/login', (req, res, next) => {
+    res.locals.isLogin = true;
+    next();
+  });
+  app.get('/login', (req, res) => {
+    res.render('pages/login');
+  });
+  app.post('/login', async (req, res) => {
+    const { username, password } = req.body;
+    if (typeof username !== 'string' || typeof password !== 'string' || !username || !password) {
+      return res.status(400).render('pages/login', {
+        message: 'Enter your username and password.', error: true,
+      });
+    }
+    try {
+      const user = await db.oneOrNone('SELECT * FROM users WHERE username = $1', [username.trim()]);
+      if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+        return res.status(401).render('pages/login', {
+          message: 'Incorrect username or password.', error: true,
         });
-    });
-});
-
-// Friends page: search users by username and list the user's friends.
-app.get('/friends', auth, async (req, res) => {
-  const userId = req.session.user.user_id;
-  const search = (req.query.search || '').trim();
-
-  try {
-    const friends = await db.any(
-      `SELECT users.user_id, users.username
-       FROM friendships
-       JOIN users ON users.user_id = friendships.friend_id
-       WHERE friendships.user_id = $1
-         AND friendships.status = 'accepted'
-       ORDER BY users.username`,
-      [userId]
-    );
-
-    // Requests other people sent you, waiting for you to accept or decline.
-    const incomingRequests = await db.any(
-      `SELECT users.user_id, users.username
-       FROM friendships
-       JOIN users ON users.user_id = friendships.user_id
-       WHERE friendships.friend_id = $1
-         AND friendships.status = 'pending'
-       ORDER BY friendships.created_at`,
-      [userId]
-    );
-
-    // Requests you sent that the other person hasn't answered yet.
-    const sentRequests = await db.any(
-      `SELECT users.user_id, users.username
-       FROM friendships
-       JOIN users ON users.user_id = friendships.friend_id
-       WHERE friendships.user_id = $1
-         AND friendships.status = 'pending'
-       ORDER BY friendships.created_at`,
-      [userId]
-    );
-
-    // Only search when something was typed. Leaves out yourself, your friends,
-    // and anyone you already have a request with (sent or received).
-    let results = [];
-    if (search) {
-      results = await db.any(
-        `SELECT user_id, username
-         FROM users
-         WHERE username ILIKE $1
-           AND user_id <> $2
-           AND user_id NOT IN (SELECT friend_id FROM friendships WHERE user_id = $2)
-           AND user_id NOT IN (SELECT user_id FROM friendships WHERE friend_id = $2)
-         ORDER BY username
-         LIMIT 10`,
-        ['%' + search + '%', userId]
+      }
+      //Updating login time for engagement stuff.
+      await db.none(
+        `UPDATE users
+        SET last_login = CURRENT_TIMESTAMP
+        WHERE user_id = $1`,
+        [user.user_id]
       );
+      // Call streak function
+      await updateLoginStreak(user.user_id);
+      req.session.regenerate(err => {
+        if (err) return loginSessionError(res);
+        req.session.user = { user_id: user.user_id, username: user.username };
+        req.session.save(err => {
+          if (err) return loginSessionError(res);
+          return res.redirect('/home');
+        });
+      });
+    } catch (error) {
+      console.error('Login failed:', error.code);
+      return loginSessionError(res);
     }
-
-    // Profile pop-up: /friends?profile=<id> opens it, but only for someone on your friends list.
-    let profile = null;
-    const friend = friends.find(f => String(f.user_id) === req.query.profile);
-
-    if (friend) {
-      // A streak only counts if they logged in today or yesterday, otherwise it shows 0.
-      profile = await db.one(
-        `SELECT
-           users.username,
-           TO_CHAR(users.created_at, 'Mon FMDD, YYYY') AS member_since,
-           CASE
-             WHEN user_stats.last_login_date >= (CURRENT_TIMESTAMP AT TIME ZONE users.timezone)::DATE - 1
-             THEN user_stats.current_streak
-             ELSE 0
-           END AS current_streak,
-           COALESCE(user_stats.longest_streak, 0) AS longest_streak
-         FROM users
-         LEFT JOIN user_stats ON user_stats.user_id = users.user_id
-         WHERE users.user_id = $1`,
-        [friend.user_id]
-      );
-
-      // Their flashcard sets, newest first, with how many cards each one has.
-      profile.sets = await db.any(
-        `SELECT
-           decks.title,
-           COUNT(flashcards.card_id) || CASE WHEN COUNT(flashcards.card_id) = 1 THEN ' card' ELSE ' cards' END AS card_count
-         FROM decks
-         LEFT JOIN flashcards ON flashcards.deck_id = decks.deck_id
-         WHERE decks.user_id = $1
-         GROUP BY decks.deck_id
-         ORDER BY decks.created_at DESC`,
-        [friend.user_id]
-      );
-    }
-
-    res.render('pages/friends', {
-      isHome: true, // uses the same dashboard layout as the home page
-      username: req.session.user.username,
-      search,
-      searched: search !== '',
-      results,
-      friends,
-      incomingRequests,
-      sentRequests,
-      profile,
-    });
-  } catch (error) {
-    console.error('Friends page failed:', error.code);
-    res.render('pages/friends', {
-      isHome: true,
-      username: req.session.user.username,
-      message: 'Unable to load friends. Please try again later.',
-      error: true,
+  });
+  function loginSessionError(res) {
+    return res.status(500).render('pages/login', {
+      message: 'Unable to log in. Please try again later.', error: true,
     });
   }
-});
+  app.get('/logout', (req, res) => {
+      req.session.destroy((err) => {
+          if (err) {
+              console.error(err);
+              return res.render('pages/logout', {
+                  message: "Unable to logout.",
+                  error: true
+              });
+          }
+      res.render('pages/logout', {
+          message: "Logged out Successfully.",        
+          error: false
+          });
+      });
+  });
 
-// Send a friend request from the search results.
-app.post('/friends/request', auth, async (req, res) => {
-  try {
-    await db.none(
-      `INSERT INTO friendships (user_id, friend_id, status)
-       VALUES ($1, $2, 'pending')
-       ON CONFLICT DO NOTHING`,
-      [req.session.user.user_id, req.body.friend_id]
-    );
-  } catch (error) {
-    console.error('Friend request failed:', error.code);
-  }
-  res.redirect('/friends');
-});
-
-// Accept a friend request. Both people end up on each other's friends list.
-app.post('/friends/accept', auth, async (req, res) => {
-  const userId = req.session.user.user_id;
-  const senderId = req.body.friend_id;
-
-  try {
-    await db.tx(async t => {
-      // Only accepts a request that was actually sent to you.
-      const accepted = await t.result(
-        `UPDATE friendships
-         SET status = 'accepted'
-         WHERE user_id = $1 AND friend_id = $2 AND status = 'pending'`,
-        [senderId, userId]
+  // Content page: every flashcard set the user has made, newest first.
+  app.get('/content', auth, async (req, res) => {
+    try {
+      const sets = await db.any(
+        `SELECT
+          decks.deck_id,
+          decks.title,
+          decks.description,
+          TO_CHAR(decks.created_at, 'Mon FMDD, YYYY') AS created_on,
+          COUNT(flashcards.card_id) || CASE WHEN COUNT(flashcards.card_id) = 1 THEN ' card' ELSE ' cards' END AS card_count
+        FROM decks
+        LEFT JOIN flashcards ON flashcards.deck_id = decks.deck_id
+        WHERE decks.user_id = $1
+        GROUP BY decks.deck_id
+        ORDER BY decks.created_at DESC, decks.deck_id DESC`,
+        [req.session.user.user_id]
       );
 
-      if (accepted.rowCount === 1) {
-        await t.none(
-          `INSERT INTO friendships (user_id, friend_id, status)
-           VALUES ($1, $2, 'accepted')
-           ON CONFLICT (user_id, friend_id) DO UPDATE SET status = 'accepted'`,
-          [userId, senderId]
+      res.render('pages/content', {
+        isHome: true, // uses the same dashboard layout as the home page
+        username: req.session.user.username,
+        sets,
+      });
+    } catch (error) {
+      console.error('Content page failed:', error.code);
+      res.render('pages/content', {
+        isHome: true,
+        username: req.session.user.username,
+        message: 'Unable to load your sets. Please try again later.',
+        error: true,
+      });
+    }
+  });
+
+  // Friends page: search users by username and list the user's friends.
+  app.get('/friends', auth, async (req, res) => {
+    const userId = req.session.user.user_id;
+    const search = (req.query.search || '').trim();
+
+    try {
+      const friends = await db.any(
+        `SELECT users.user_id, users.username
+        FROM friendships
+        JOIN users ON users.user_id = friendships.friend_id
+        WHERE friendships.user_id = $1
+          AND friendships.status = 'accepted'
+        ORDER BY users.username`,
+        [userId]
+      );
+
+      // Requests other people sent you, waiting for you to accept or decline.
+      const incomingRequests = await db.any(
+        `SELECT users.user_id, users.username
+        FROM friendships
+        JOIN users ON users.user_id = friendships.user_id
+        WHERE friendships.friend_id = $1
+          AND friendships.status = 'pending'
+        ORDER BY friendships.created_at`,
+        [userId]
+      );
+
+      // Requests you sent that the other person hasn't answered yet.
+      const sentRequests = await db.any(
+        `SELECT users.user_id, users.username
+        FROM friendships
+        JOIN users ON users.user_id = friendships.friend_id
+        WHERE friendships.user_id = $1
+          AND friendships.status = 'pending'
+        ORDER BY friendships.created_at`,
+        [userId]
+      );
+
+      // Only search when something was typed. Leaves out yourself, your friends,
+      // and anyone you already have a request with (sent or received).
+      let results = [];
+      if (search) {
+        results = await db.any(
+          `SELECT user_id, username
+          FROM users
+          WHERE username ILIKE $1
+            AND user_id <> $2
+            AND user_id NOT IN (SELECT friend_id FROM friendships WHERE user_id = $2)
+            AND user_id NOT IN (SELECT user_id FROM friendships WHERE friend_id = $2)
+          ORDER BY username
+          LIMIT 10`,
+          ['%' + search + '%', userId]
         );
       }
-    });
-  } catch (error) {
-    console.error('Accept friend request failed:', error.code);
-  }
-  res.redirect('/friends');
-});
 
-// Decline a request, cancel a request you sent, or delete a friend.
-// Removes the connection in both directions, so it disappears for both people.
-app.post('/friends/remove', auth, async (req, res) => {
-  try {
-    await db.none(
-      `DELETE FROM friendships
-       WHERE (user_id = $1 AND friend_id = $2)
-          OR (user_id = $2 AND friend_id = $1)`,
-      [req.session.user.user_id, req.body.friend_id]
-    );
-  } catch (error) {
-    console.error('Remove friend failed:', error.code);
-  }
-  res.redirect('/friends');
-});
+      // Profile pop-up: /friends?profile=<id> opens it, but only for someone on your friends list.
+      let profile = null;
+      const friend = friends.find(f => String(f.user_id) === req.query.profile);
 
-/// Separate function to update streak; didn't want to nest this whole thing
-async function updateLoginStreak(userId) {
-  await db.none(`
-      INSERT INTO user_stats (
-          user_id,
-          current_streak,
-          longest_streak,
-          last_login_date
-      )
-      SELECT
-          user_id,
-          1,
-          1,
-          (CURRENT_TIMESTAMP AT TIME ZONE timezone)::DATE
-      FROM users
-      WHERE user_id = $1
+      if (friend) {
+        // A streak only counts if they logged in today or yesterday, otherwise it shows 0.
+        profile = await db.one(
+          `SELECT
+            users.username,
+            TO_CHAR(users.created_at, 'Mon FMDD, YYYY') AS member_since,
+            CASE
+              WHEN user_stats.last_login_date >= (CURRENT_TIMESTAMP AT TIME ZONE users.timezone)::DATE - 1
+              THEN user_stats.current_streak
+              ELSE 0
+            END AS current_streak,
+            COALESCE(user_stats.longest_streak, 0) AS longest_streak
+          FROM users
+          LEFT JOIN user_stats ON user_stats.user_id = users.user_id
+          WHERE users.user_id = $1`,
+          [friend.user_id]
+        );
 
-      ON CONFLICT (user_id)
-      DO UPDATE SET
+        // Their flashcard sets, newest first, with how many cards each one has.
+        profile.sets = await db.any(
+          `SELECT
+            decks.title,
+            COUNT(flashcards.card_id) || CASE WHEN COUNT(flashcards.card_id) = 1 THEN ' card' ELSE ' cards' END AS card_count
+          FROM decks
+          LEFT JOIN flashcards ON flashcards.deck_id = decks.deck_id
+          WHERE decks.user_id = $1
+          GROUP BY decks.deck_id
+          ORDER BY decks.created_at DESC`,
+          [friend.user_id]
+        );
+      }
 
-          current_streak = CASE
-              WHEN user_stats.last_login_date = EXCLUDED.last_login_date
-                  THEN user_stats.current_streak
-
-              WHEN user_stats.last_login_date = EXCLUDED.last_login_date - 1
-                  THEN user_stats.current_streak + 1
-
-              ELSE 1
-          END,
-
-          longest_streak = GREATEST(
-              user_stats.longest_streak,
-              CASE
-                  WHEN user_stats.last_login_date = EXCLUDED.last_login_date
-                      THEN user_stats.current_streak
-
-                  WHEN user_stats.last_login_date = EXCLUDED.last_login_date - 1
-                      THEN user_stats.current_streak + 1
-
-                  ELSE 1
-              END
-          ),
-
-          last_login_date = EXCLUDED.last_login_date;
-  `, [userId]);
-}
-
-// *****************************************************
-// <!-- Section 5 : Start Server-->
-// *****************************************************
-// starting the server and keeping the connection open to listen for more requests
-if (require.main === module) {
-  app.listen(3000, () => {
-    console.log('Server is listening on port 3000');
+      res.render('pages/friends', {
+        isHome: true, // uses the same dashboard layout as the home page
+        username: req.session.user.username,
+        search,
+        searched: search !== '',
+        results,
+        friends,
+        incomingRequests,
+        sentRequests,
+        profile,
+      });
+    } catch (error) {
+      console.error('Friends page failed:', error.code);
+      res.render('pages/friends', {
+        isHome: true,
+        username: req.session.user.username,
+        message: 'Unable to load friends. Please try again later.',
+        error: true,
+      });
+    }
   });
-}
 
-module.exports = app;
+  // Send a friend request from the search results.
+  app.post('/friends/request', auth, async (req, res) => {
+    try {
+      await db.none(
+        `INSERT INTO friendships (user_id, friend_id, status)
+        VALUES ($1, $2, 'pending')
+        ON CONFLICT DO NOTHING`,
+        [req.session.user.user_id, req.body.friend_id]
+      );
+    } catch (error) {
+      console.error('Friend request failed:', error.code);
+    }
+    res.redirect('/friends');
+  });
+
+  // Accept a friend request. Both people end up on each other's friends list.
+  app.post('/friends/accept', auth, async (req, res) => {
+    const userId = req.session.user.user_id;
+    const senderId = req.body.friend_id;
+
+    try {
+      await db.tx(async t => {
+        // Only accepts a request that was actually sent to you.
+        const accepted = await t.result(
+          `UPDATE friendships
+          SET status = 'accepted'
+          WHERE user_id = $1 AND friend_id = $2 AND status = 'pending'`,
+          [senderId, userId]
+        );
+
+        if (accepted.rowCount === 1) {
+          await t.none(
+            `INSERT INTO friendships (user_id, friend_id, status)
+            VALUES ($1, $2, 'accepted')
+            ON CONFLICT (user_id, friend_id) DO UPDATE SET status = 'accepted'`,
+            [userId, senderId]
+          );
+        }
+      });
+    } catch (error) {
+      console.error('Accept friend request failed:', error.code);
+    }
+    res.redirect('/friends');
+  });
+
+  // Decline a request, cancel a request you sent, or delete a friend.
+  // Removes the connection in both directions, so it disappears for both people.
+  app.post('/friends/remove', auth, async (req, res) => {
+    try {
+      await db.none(
+        `DELETE FROM friendships
+        WHERE (user_id = $1 AND friend_id = $2)
+            OR (user_id = $2 AND friend_id = $1)`,
+        [req.session.user.user_id, req.body.friend_id]
+      );
+    } catch (error) {
+      console.error('Remove friend failed:', error.code);
+    }
+    res.redirect('/friends');
+  });
+
+  /// Separate function to update streak; didn't want to nest this whole thing
+  async function updateLoginStreak(userId) {
+    await db.none(`
+        INSERT INTO user_stats (
+            user_id,
+            current_streak,
+            longest_streak,
+            last_login_date
+        )
+        SELECT
+            user_id,
+            1,
+            1,
+            (CURRENT_TIMESTAMP AT TIME ZONE timezone)::DATE
+        FROM users
+        WHERE user_id = $1
+
+        ON CONFLICT (user_id)
+        DO UPDATE SET
+
+            current_streak = CASE
+                WHEN user_stats.last_login_date = EXCLUDED.last_login_date
+                    THEN user_stats.current_streak
+
+                WHEN user_stats.last_login_date = EXCLUDED.last_login_date - 1
+                    THEN user_stats.current_streak + 1
+
+                ELSE 1
+            END,
+
+            longest_streak = GREATEST(
+                user_stats.longest_streak,
+                CASE
+                    WHEN user_stats.last_login_date = EXCLUDED.last_login_date
+                        THEN user_stats.current_streak
+
+                    WHEN user_stats.last_login_date = EXCLUDED.last_login_date - 1
+                        THEN user_stats.current_streak + 1
+
+                    ELSE 1
+                END
+            ),
+
+            last_login_date = EXCLUDED.last_login_date;
+    `, [userId]);
+  }
+
+  // *****************************************************
+  // <!-- Section 5 : Start Server-->
+  // *****************************************************
+  // starting the server and keeping the connection open to listen for more requests
+  if (require.main === module) {
+    app.listen(3000, () => {
+      console.log('Server is listening on port 3000');
+    });
+  }
+
+  module.exports = app;
