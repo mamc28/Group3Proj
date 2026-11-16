@@ -101,7 +101,24 @@
         [userId]
       );
 
-      
+      const nextExam = await db.oneOrNone(
+        `SELECT
+            e.exam_id,
+            e.exam_name,
+            e.exam_date,
+            TO_CHAR(e.exam_date, 'FMMonth FMDD, YYYY') AS formatted_date,
+            (e.exam_date -
+                (CURRENT_TIMESTAMP AT TIME ZONE u.timezone)::DATE
+            )::INTEGER AS days_until
+         FROM exams e
+         JOIN users u ON e.user_id = u.user_id
+         WHERE e.user_id = $1
+           AND e.exam_date >=
+               (CURRENT_TIMESTAMP AT TIME ZONE u.timezone)::DATE
+         ORDER BY e.exam_date ASC, e.exam_id ASC
+         LIMIT 1`,
+        [userId]
+    );
 
 
       res.render('pages/home', {
