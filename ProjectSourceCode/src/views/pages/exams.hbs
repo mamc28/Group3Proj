@@ -5,6 +5,12 @@
             Keep track of upcoming exams and the ones you've already completed.
         </p>
 
+        {{#unless editingExam}}
+            {{#unless errors}}
+                <button type="button" id="add-exam-button" class="create-button">Add an Exam</button>
+            {{/unless}}
+        {{/unless}}
+
         <!-- Validation errors -->
         {{#if errors}}
             <div class="dashboard-card" role="alert">
@@ -18,7 +24,12 @@
         {{/if}}
 
         <!-- Add/edit exam form -->
-        <section class="dashboard-card">
+        <section class="dashboard-card" id="exam-form-section"
+            {{#unless editingExam}}
+                {{#unless errors}}
+                    hidden
+                {{/unless}}
+            {{/unless}}>
             <h2 class="card-heading">
                 {{#if editingExam}}
                     Edit exam
@@ -107,6 +118,10 @@
                         Add exam
                     {{/if}}
                 </button>
+
+                {{#unless editingExam}}
+                    <button type="button" id="cancel-exam-button" class="create-button">Cancel</button>
+                {{/unless}}
 
                 {{#if editingExam}}
                     <p>
@@ -239,3 +254,28 @@
         </section>
 
 </main>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const addButton = document.getElementById('add-exam-button');
+        const cancelButton = document.getElementById('cancel-exam-button');
+        const examForm = document.getElementById('exam-form-section');
+
+        if (addButton && examForm) {
+            addButton.addEventListener('click', () => {
+                examForm.hidden = false;
+                addButton.hidden = true;
+            });
+        }
+
+        if (cancelButton && examForm) {
+            cancelButton.addEventListener('click', () => {
+                examForm.hidden = true;
+
+                if (addButton) {
+                    addButton.hidden = false;
+                }
+            });
+        }
+    });
+</script>
