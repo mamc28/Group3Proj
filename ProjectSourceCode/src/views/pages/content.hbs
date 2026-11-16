@@ -2,7 +2,17 @@
   {{> message}}
   <div class="content-header">
     <h1 class="welcome-heading">Your content</h1>
-    <a class="create-button" href="/decks/new">+ Create new set</a>
+
+    <div class="content-header-actions">
+        <a class="create-button" href="/decks/new">+ Create new set</a>
+        <button
+            class="create-button"
+            type="button"
+            id="import-set-button"
+        >
+            Import a set
+        </button>
+    </div>
   </div>
 
   <form class="content-filters" action="/content" method="GET" role="search">
@@ -41,3 +51,15 @@
     {{/each}}
   </section>
 </main>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const importButton = document.getElementById('import-set-button');
+
+        if (importButton) {
+            importButton.addEventListener('click', () => {
+                alert('Import functionality is coming soon!');
+            });
+        }
+    });
+</script>

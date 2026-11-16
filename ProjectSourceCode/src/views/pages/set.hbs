@@ -6,6 +6,15 @@
   <nav class="set-actions" aria-label="Manage this set">
     <a class="create-button" href="/decks/{{deck_id}}/edit">Edit set</a>
     <a class="create-button" href="/decks/{{deck_id}}/rename">Rename</a>
+
+    <button
+        class="create-button"
+        type="button"
+        id="export-set-button"
+    >
+        Export set
+    </button>
+
     <a class="create-button danger-button" href="/decks/{{deck_id}}/delete">Delete set</a>
   </nav>
   {{#if cards.length}}
@@ -74,5 +83,17 @@
     <div class="dashboard-card"><h2>No cards yet</h2><p>Add your first card to start studying.</p><a class="create-button" href="/decks/{{deck_id}}/edit">Add cards</a></div>
   {{/if}}
   <script src="/js/study-set.js" defer></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const exportButton = document.getElementById('export-set-button');
+        if (exportButton) {
+            exportButton.addEventListener('click', () => {
+                alert('Export functionality is coming soon!');
+            });
+        }
+    });
+  </script>
+
   <a href="/decks/new">Create another set</a>
 </main>

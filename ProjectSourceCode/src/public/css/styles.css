@@ -27,13 +27,14 @@
 .exam-progress-track { height: .5rem; overflow: hidden; border-radius: 1rem; background: #363659; }
 .exam-progress-fill { display: block; width: 0%; height: 100%; background: #6868a6; border-radius: 1rem; }
 .exam-status { color: #c2c2d9; font-size: .85rem; }
+.add-exam-button {cursor: pointer; margin-bottom: 1rem;}
 .welcome-description { color: #c2c2d9; margin-bottom: 3rem; }
 .dashboard-card { padding: 2rem; margin-bottom: 1.5rem; border: 1px solid #363659; border-radius: 1rem; background: #21213b; }
 .card-heading { margin: 0 0 1rem; font-size: 1.15rem; line-height: 1.2; letter-spacing: -.03em; }
 .card-title { font-size: clamp(1.5rem, 3vw, 2rem); margin: 1.5rem 0 .75rem; line-height: 1.2; letter-spacing: -.03em; }
 .card-description { color: #c2c2d9; }
 .create-card { background: linear-gradient(120deg, #363659, #21213b); border-color: #505077; }
-.create-button { padding: .75rem 1.25rem; margin-top: 1rem; border: 1px solid #505077; border-radius: .65rem; background: #363659; color: #c2c2d9; font: inherit; font-weight: 600; cursor: not-allowed; }
+.create-button { padding: .75rem 1.25rem; margin-top: 1rem; border: 1px solid #505077; border-radius: .65rem; background: #363659; color: #c2c2d9; font: inherit; font-weight: 600; cursor: pointer; }
 .recent-set { padding-top: 1rem; border-top: 1px solid #363659; }
 .site-footer { flex-basis: 100%; }
 
