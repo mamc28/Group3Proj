@@ -323,3 +323,11 @@ html:has(.set-dialog[open]) { overflow: hidden; }
 .content-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; }
 .content-header .welcome-heading { margin: 0; }
 .content-header .create-button { margin: 0; }
+
+/* Content page: search box, sort dropdown, and search button on one row. */
+.content-filters { display: flex; flex-wrap: wrap; gap: .75rem; margin-bottom: 1.5rem; }
+.content-filters .field-input { margin-bottom: 0; }
+#content-search { flex: 1 1 240px; }
+#content-sort { flex: 0 1 180px; cursor: pointer; }
+.content-filters .submit-button { width: auto; }
+.card-description a { color: inherit; }
