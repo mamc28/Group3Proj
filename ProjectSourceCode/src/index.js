@@ -231,8 +231,26 @@
       });
   });
 
-  // Content page: every flashcard set the user has made, newest first.
+    // Content page: every flashcard set the user has made, with search and sort.
+  // Each sort choice maps to a fixed ORDER BY, so only these exact values can reach the SQL.
+  const contentSorts = {
+    newest: { label: 'Newest first', orderBy: 'decks.created_at DESC, decks.deck_id DESC' },
+    oldest: { label: 'Oldest first', orderBy: 'decks.created_at ASC, decks.deck_id ASC' },
+    az: { label: 'Title A–Z', orderBy: 'LOWER(decks.title) ASC, decks.deck_id ASC' },
+    cards: { label: 'Most cards', orderBy: 'COUNT(flashcards.card_id) DESC, decks.created_at DESC' },
+  };
+
   app.get('/content', auth, async (req, res) => {
+    const search = (req.query.search || '').trim();
+    const sort = contentSorts[req.query.sort] ? req.query.sort : 'newest';
+
+    // Options for the sort dropdown, with the current choice marked as selected.
+    const sortOptions = Object.entries(contentSorts).map(([value, option]) => ({
+      value,
+      label: option.label,
+      selected: value === sort,
+    }));
+
     try {
       const sets = await db.any(
         `SELECT
@@ -244,21 +262,26 @@
         FROM decks
         LEFT JOIN flashcards ON flashcards.deck_id = decks.deck_id
         WHERE decks.user_id = $1
+          AND decks.title ILIKE $2
         GROUP BY decks.deck_id
-        ORDER BY decks.created_at DESC, decks.deck_id DESC`,
-        [req.session.user.user_id]
+        ORDER BY ${contentSorts[sort].orderBy}`,
+        [req.session.user.user_id, '%' + search + '%']
       );
 
       res.render('pages/content', {
         isHome: true, // uses the same dashboard layout as the home page
         username: req.session.user.username,
         sets,
+        search,
+        searched: search !== '',
+        sortOptions,
       });
     } catch (error) {
       console.error('Content page failed:', error.code);
       res.render('pages/content', {
         isHome: true,
         username: req.session.user.username,
+        sortOptions,
         message: 'Unable to load your sets. Please try again later.',
         error: true,
       });
