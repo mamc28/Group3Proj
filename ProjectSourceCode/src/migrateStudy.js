@@ -6,6 +6,7 @@ const migrations = [
   '001_create.sql',
   '002_card_images.sql',
   '003_card_reviews.sql',
+  '004_friend_requests.sql',
 ];
 
 db.tx(async t => {
@@ -20,3 +21,5 @@ db.tx(async t => {
     process.exitCode = 1;
   })
   .finally(() => pgp.end());
+
+

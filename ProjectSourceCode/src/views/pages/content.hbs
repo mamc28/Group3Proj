@@ -1,0 +1,43 @@
+<main class="dashboard-content" id="main-content">
+  {{> message}}
+  <div class="content-header">
+    <h1 class="welcome-heading">Your content</h1>
+    <a class="create-button" href="/decks/new">+ Create new set</a>
+  </div>
+
+  <form class="content-filters" action="/content" method="GET" role="search">
+    <label class="visually-hidden" for="content-search">Search your sets</label>
+    <input class="field-input" type="search" id="content-search" name="search" value="{{search}}" placeholder="Search your sets by title">
+
+    <label class="visually-hidden" for="content-sort">Sort sets</label>
+    <select class="field-input" id="content-sort" name="sort" onchange="this.form.submit()">
+      {{#each sortOptions}}
+        <option value="{{value}}"{{#if selected}} selected{{/if}}>{{label}}</option>
+      {{/each}}
+    </select>
+
+    <button class="submit-button" type="submit">Search</button>
+  </form>
+
+  <section class="dashboard-card" aria-labelledby="sets-heading">
+    <h2 class="card-heading" id="sets-heading">Your sets</h2>
+    {{#each sets}}
+      <article class="recent-set">
+        <h3 class="card-title"><a href="/decks/{{deck_id}}">{{title}}</a></h3>
+        {{#if description}}<p class="card-description">{{description}}</p>{{/if}}
+        <p class="card-description">{{card_count}} · Created {{created_on}}</p>
+        <nav class="set-actions" aria-label="Manage {{title}}">
+          <a href="/decks/{{deck_id}}/edit">Edit</a>
+          <a href="/decks/{{deck_id}}/rename">Rename</a>
+          <a class="danger-link" href="/decks/{{deck_id}}/delete">Delete</a>
+        </nav>
+      </article>
+    {{else}}
+      {{#if searched}}
+        <p class="card-description">No sets match "{{search}}". <a href="/content">Show all sets</a></p>
+      {{else}}
+        <p class="card-description">You haven't made any sets yet. Click "Create new set" to make your first one.</p>
+      {{/if}}
+    {{/each}}
+  </section>
+</main>

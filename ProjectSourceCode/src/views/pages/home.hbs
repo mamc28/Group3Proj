@@ -2,6 +2,37 @@
   {{> message}}
   <section class="exam-banner" aria-labelledby="exam-heading">
     <span class="calendar-icon" aria-hidden="true">&#128197;</span>
+    <div class="next-exam-container">
+
+    <h2>Next Upcoming Exam</h2>
+
+    {{#if nextExam}}
+
+        <div class="exam-card">
+
+            <h3>{{nextExam.exam_name}}</h3>
+
+            <p>{{nextExam.formatted_date}}</p>
+
+            {{#if nextExam.days_until}}
+                <h2>{{nextExam.days_until}} Days Remaining</h2>
+            {{else}}
+                <h2>Your Exam is Today!</h2>
+            {{/if}}
+
+        </div>
+
+        <a href="/exams">Manage Exams</a>
+
+    {{else}}
+
+        <p>You don't have any upcoming exams.</p>
+
+        <a href="/exams">Add an Exam</a>
+
+    {{/if}}
+
+</div>
     <div class="exam-summary">
       <h2 class="exam-heading" id="exam-heading">Your next exam</h2>
       {{#if nextExam}}
