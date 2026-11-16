@@ -7,8 +7,8 @@ const { randomBytes, timingSafeEqual } = require('node:crypto');
 router.use((req, res, next) => {
   if (!req.session.deckCsrf) req.session.deckCsrf = randomBytes(32).toString('hex');
   res.locals.csrfToken = req.session.deckCsrf;
-  if (req.method === 'POST' && /^\/[^/]+\/(edit|rename|delete)$/.test(req.path)) {
-    const token = typeof req.body.csrfToken === 'string' ? req.body.csrfToken : '';
+  if (req.method === 'POST' && (/^\/[^/]+\/(edit|rename|delete)$/.test(req.path) || req.path === '/import')) {
+    const token = typeof req.body?.csrfToken === 'string' ? req.body.csrfToken : req.get('X-CSRF-Token') || '';
     const expected = Buffer.from(req.session.deckCsrf);
     const submitted = Buffer.from(token);
     if (submitted.length !== expected.length || !timingSafeEqual(submitted, expected)) {
@@ -22,6 +22,224 @@ router.param('id', (req, res, next, id) => {
   if (!/^[1-9]\d*$/.test(id) || Number(id) > 2147483647) return res.status(404).send('Set not found.');
   next();
 });
+
+
+/*
+ * Return the current deck CSRF token to the import interface.
+ * The token is tied to the user's session.
+ */
+router.get('/import-token', (req, res) => {
+  res.set('Cache-Control', 'private, no-store');
+  return res.json({ csrfToken: req.session.deckCsrf });
+});
+
+
+/*
+ * Import a flashcard set from the JSON format produced by our export route.
+ * Every import creates a NEW deck.
+ */
+router.post(
+  '/import',
+  require('express').text({
+    type: 'application/octet-stream',
+    limit: '12mb'
+  }),
+  async (req, res) => {
+    try {
+      // Parse the uploaded JSON.
+      let imported;
+
+      try {
+        imported = JSON.parse(req.body);
+      } catch {
+        return res.status(400).json({
+          error: 'The selected file is not valid JSON.'
+        });
+      }
+
+      // Validate the overall export format.
+      if (
+        !imported ||
+        typeof imported !== 'object' ||
+        imported.format !== 'scramble-set' ||
+        imported.version !== 1
+      ) {
+        return res.status(400).json({
+          error: 'This file is not a supported Scramble set export.'
+        });
+      }
+
+      const title =
+        typeof imported.title === 'string'
+          ? imported.title.trim()
+          : '';
+
+      const description =
+        typeof imported.description === 'string'
+          ? imported.description.trim()
+          : '';
+
+      const inputCards = imported.cards;
+
+      if (
+        !title ||
+        title.length > 100 ||
+        typeof imported.description !== 'string' ||
+        !Array.isArray(inputCards) ||
+        inputCards.length < 1 ||
+        inputCards.length > 100
+      ) {
+        return res.status(400).json({
+          error: 'The set must have a title up to 100 characters and contain 1–100 cards.'
+        });
+      }
+
+      const allowedTypes = [
+        'text',
+        'image',
+        'image-text',
+        'image-both'
+      ];
+
+      let totalImageBytes = 0;
+
+      // Validate and decode every card before starting the transaction.
+      const cards = [];
+
+      for (const [index, card] of inputCards.entries()) {
+        if (
+          !card ||
+          typeof card !== 'object' ||
+          typeof card.question !== 'string' ||
+          typeof card.answer !== 'string'
+        ) {
+          return res.status(400).json({
+            error: `Card ${index + 1} is missing its question or answer.`
+          });
+        }
+
+        const question = card.question.trim();
+        const answer = card.answer.trim();
+        const frontType = card.frontType;
+
+        if (
+          !question ||
+          !answer ||
+          !allowedTypes.includes(frontType)
+        ) {
+          return res.status(400).json({
+            error: `Card ${index + 1} has invalid text or card type.`
+          });
+        }
+
+        const needsFrontImage = frontType !== 'text';
+        const needsBackImage = frontType === 'image-both';
+
+        let frontImage = null;
+        let backImage = null;
+
+        // Validate the front image when this card type requires one.
+        if (needsFrontImage) {
+          try {
+            frontImage = parseCardImage(card.image);
+            totalImageBytes += frontImage.data.length;
+          } catch (error) {
+            return res.status(400).json({
+              error: `Card ${index + 1} front image: ${error.message}`
+            });
+          }
+        } else if (card.image !== null) {
+          return res.status(400).json({
+            error: `Card ${index + 1} should not contain a front image.`
+          });
+        }
+
+        // Validate the back image for image-both cards.
+        if (needsBackImage) {
+          try {
+            backImage = parseCardImage(card.backImage);
+            totalImageBytes += backImage.data.length;
+          } catch (error) {
+            return res.status(400).json({
+              error: `Card ${index + 1} back image: ${error.message}`
+            });
+          }
+        } else if (card.backImage !== null) {
+          return res.status(400).json({
+            error: `Card ${index + 1} should not contain a back image.`
+          });
+        }
+
+        if (totalImageBytes > 8 * 1024 * 1024) {
+          return res.status(400).json({
+            error: 'The combined image size cannot exceed 8 MB.'
+          });
+        }
+
+        cards.push({
+          question,
+          answer,
+          frontType,
+          frontImage,
+          backImage
+        });
+      }
+
+      // Create the deck and its cards atomically.
+      const deck = await db.tx(async transaction => {
+        const created = await transaction.one(
+          `INSERT INTO decks(user_id, title, description)
+           VALUES($1, $2, $3)
+           RETURNING deck_id`,
+          [req.session.user.user_id, title, description]
+        );
+
+        // Insert sequentially so the card order is preserved.
+        for (const card of cards) {
+          await transaction.none(
+            `INSERT INTO flashcards(
+              deck_id,
+              question,
+              answer,
+              image_data,
+              image_type,
+              front_type,
+              back_image_data,
+              back_image_type
+            )
+            VALUES($1, $2, $3, $4, $5, $6, $7, $8)`,
+            [
+              created.deck_id,
+              card.question,
+              card.answer,
+              card.frontImage?.data || null,
+              card.frontImage?.type || null,
+              card.frontType,
+              card.backImage?.data || null,
+              card.backImage?.type || null
+            ]
+          );
+        }
+
+        return created;
+      });
+
+      return res.status(201).json({
+        success: true,
+        deckId: deck.deck_id,
+        redirectUrl: `/decks/${deck.deck_id}`
+      });
+
+    } catch (error) {
+      console.error('Unable to import set:', error.code);
+
+      return res.status(500).json({
+        error: 'Unable to import this set. Please try again.'
+      });
+    }
+  }
+);
+
 
 router.get('/new', (req, res) => {
   res.render('pages/create-set', { cards: [{}] }); // Creates an array containing one empty object (one blank card)

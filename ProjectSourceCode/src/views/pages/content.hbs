@@ -1,3 +1,57 @@
+
+<dialog id="import-set-dialog" class="import-set-dialog">
+    <h2 class="card-heading">Import a set</h2>
+
+    <p>
+        Select a Scramble JSON export file to import.
+        This will create a new flashcard set without changing your existing sets.
+    </p>
+
+    <label class="field-label" for="import-set-file">
+        Choose JSON file
+    </label>
+
+    <input
+        class="field-input"
+        type="file"
+        id="import-set-file"
+        accept=".json,application/json"
+    >
+
+    <section id="import-set-preview" hidden>
+        <h3 class="card-title" id="import-preview-title"></h3>
+        <p class="card-description" id="import-preview-description"></p>
+        <p class="card-description" id="import-preview-count"></p>
+
+        <h3 class="card-title">Card preview</h3>
+        <ol id="import-preview-cards"></ol>
+    </section>
+
+    <p id="import-set-status" role="alert" class="card-image-error"></p>
+
+    <div class="set-actions">
+        <button
+            type="button"
+            class="create-button"
+            id="cancel-import-set"
+        >
+            Cancel
+        </button>
+
+        <button
+            type="button"
+            class="submit-button"
+            id="confirm-import-set"
+            disabled
+        >
+            Import set
+        </button>
+    </div>
+</dialog>
+
+<script src="/js/import-set.js" defer></script>
+
+
 <main class="dashboard-content" id="main-content">
   {{> message}}
   <div class="content-header">
@@ -52,14 +106,3 @@
   </section>
 </main>
 
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const importButton = document.getElementById('import-set-button');
-
-        if (importButton) {
-            importButton.addEventListener('click', () => {
-                alert('Import functionality is coming soon!');
-            });
-        }
-    });
-</script>
