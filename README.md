@@ -35,6 +35,9 @@ docker compose -p lab10-tests -f ProjectSourceCode/docker-compose.test.yaml run 
 docker compose -p lab10-tests -f ProjectSourceCode/docker-compose.test.yaml up --abort-on-container-exit --exit-code-from tests
 ```
 
+The test container applies schema migrations before running Mocha, including when
+reusing an existing test database volume.
+
 The database initialization scripts run only when the `group-project` volume is
 first created. The web service waits for PostgreSQL, then reapplies the idempotent
 schema scripts before starting, bringing existing volumes up to date without

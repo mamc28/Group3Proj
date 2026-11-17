@@ -22,7 +22,7 @@ services:
     volumes:
       - ../:/repository
       - lab10-test-node-modules:/repository/node_modules
-    command: ['npm', 'test']
+    command: ['sh', '-c', 'node ProjectSourceCode/src/migrateStudy.js && npm test']
 volumes:
   lab10-test-db:
   lab10-test-node-modules:

@@ -105,6 +105,10 @@
       `SELECT
           e.exam_id,
           e.title AS exam_name,
+          e.title,
+          e.course,
+          TO_CHAR(e.exam_date, 'FMMonth FMDD, YYYY') AS "displayDate",
+          TO_CHAR(e.start_time, 'FMHH12:MI AM') AS "displayTime",
           e.exam_date,
           TO_CHAR(e.exam_date, 'FMMonth FMDD, YYYY') AS formatted_date,
           (e.exam_date -
