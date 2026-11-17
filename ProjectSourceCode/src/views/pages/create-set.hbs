@@ -20,9 +20,9 @@
                 Card type
                 <select class="field-input card-front-type" name="cards[{{@index}}][frontType]">
                     <option value="text">Text</option>
-                    <option value="image" {{#if isImageOnly}} selected{{/if}}>Image</option>
-                    <option value="image-text" {{#if isImageText}} selected{{/if}}>Image + text</option>
-                    <option value="image-both" {{#if isImageBoth}} selected{{/if}}>Image on both sides</option>
+                    <option value="image"{{#if isImageOnly}} selected{{/if}}>Image</option>
+                    <option value="image-text"{{#if isImageText}} selected{{/if}}>Image + text</option>
+                    <option value="image-both"{{#if isImageBoth}} selected{{/if}}>Image on both sides</option>
                 </select>
             </label>
             <div class="card-image-fields card-front-image-fields" {{#unless isImage}} hidden{{/unless}}>
