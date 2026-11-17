@@ -262,6 +262,82 @@ router.post('/:id/delete', async (req, res) => {
   }
 });
 
+
+// Export a flashcard set as a self-contained JSON file.
+router.get('/:id/export', async (req, res) => {
+  try {
+    // Only allow the owner of the set to export it.
+    const deck = await db.oneOrNone(
+      'SELECT deck_id, title, description FROM decks WHERE deck_id = $1 AND user_id = $2',
+      [req.params.id, req.session.user.user_id]
+    );
+
+    if (!deck) {
+      return res.status(404).send('Set not found.');
+    }
+
+    // Retrieve cards in their original order, including image data.
+    const cards = await db.any(
+      `SELECT question, answer, front_type,
+              image_data, image_type,
+              back_image_data, back_image_type
+       FROM flashcards
+       WHERE deck_id = $1
+       ORDER BY card_id`,
+      [deck.deck_id]
+    );
+
+    // Convert the database representation into an exportable format.
+    const exportData = {
+      format: 'scramble-set',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+
+      title: deck.title,
+      description: deck.description || '',
+
+      cards: cards.map(card => ({
+        question: card.question,
+        answer: card.answer,
+        frontType: card.front_type || 'text',
+
+        // Store images as Base64 data URLs so the export is self-contained.
+        image: card.image_data
+          ? `data:${card.image_type};base64,${Buffer.from(card.image_data).toString('base64')}`
+          : null,
+
+        backImage: card.back_image_data
+          ? `data:${card.back_image_type};base64,${Buffer.from(card.back_image_data).toString('base64')}`
+          : null
+      }))
+    };
+
+    // Generate a safe filename from the set title.
+    const filename = (deck.title || 'flashcard-set')
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9_-]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 60) || 'flashcard-set';
+
+    // Tell the browser to download the JSON rather than display it.
+    res.set({
+      'Content-Type': 'application/json; charset=utf-8',
+      'Content-Disposition': `attachment; filename="${filename}.json"`,
+      'Cache-Control': 'private, no-store',
+      'X-Content-Type-Options': 'nosniff'
+    });
+
+    return res.send(JSON.stringify(exportData, null, 2));
+
+  } catch (error) {
+    console.error('Unable to export set:', error.code);
+
+    return res.status(500).send('Unable to export your set. Please try again.');
+  }
+});
+
+
 router.get(['/:id/cards/:cardId/image', '/:id/cards/:cardId/back-image'], async (req, res) => {
   const ids = [req.params.id, req.params.cardId];
   if (ids.some(id => !/^[1-9]\d*$/.test(id) || Number(id) > 2147483647)) {

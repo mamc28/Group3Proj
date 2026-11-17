@@ -27,13 +27,14 @@
 .exam-progress-track { height: .5rem; overflow: hidden; border-radius: 1rem; background: #363659; }
 .exam-progress-fill { display: block; width: 0%; height: 100%; background: #6868a6; border-radius: 1rem; }
 .exam-status { color: #c2c2d9; font-size: .85rem; }
+.add-exam-button {cursor: pointer; margin-bottom: 1rem;}
 .welcome-description { color: #c2c2d9; margin-bottom: 3rem; }
 .dashboard-card { padding: 2rem; margin-bottom: 1.5rem; border: 1px solid #363659; border-radius: 1rem; background: #21213b; }
 .card-heading { margin: 0 0 1rem; font-size: 1.15rem; line-height: 1.2; letter-spacing: -.03em; }
 .card-title { font-size: clamp(1.5rem, 3vw, 2rem); margin: 1.5rem 0 .75rem; line-height: 1.2; letter-spacing: -.03em; }
 .card-description { color: #c2c2d9; }
 .create-card { background: linear-gradient(120deg, #363659, #21213b); border-color: #505077; }
-.create-button { padding: .75rem 1.25rem; margin-top: 1rem; border: 1px solid #505077; border-radius: .65rem; background: #363659; color: #c2c2d9; font: inherit; font-weight: 600; cursor: not-allowed; }
+.create-button { padding: .75rem 1.25rem; margin-top: 1rem; border: 1px solid #505077; border-radius: .65rem; background: #363659; color: #c2c2d9; font: inherit; font-weight: 600; cursor: pointer; }
 .recent-set { padding-top: 1rem; border-top: 1px solid #363659; }
 .site-footer { flex-basis: 100%; }
 
@@ -311,3 +312,23 @@ html:has(.set-dialog[open]) { overflow: hidden; }
   .progress-set-heading { align-items: flex-start; }
 }
 @media (max-width: 360px) { .progress-summary { grid-template-columns: 1fr; } }
+
+/* Friend requests: Accept / Decline buttons side by side. */
+.friend-actions { display: flex; gap: .5rem; }
+.friend-accept { background: #6868a6; border-color: #6868a6; }
+.friend-accept:hover { background: #7a7abd; }
+.friend-subheading { margin-top: 1.75rem; font-size: 1rem; }
+.light-mode .friend-accept { background: #a4a6c3; border-color: #9195b0; }
+
+/* Content page: heading with the create button beside it. */
+.content-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; }
+.content-header .welcome-heading { margin: 0; }
+.content-header .create-button { margin: 0; }
+
+/* Content page: search box, sort dropdown, and search button on one row. */
+.content-filters { display: flex; flex-wrap: wrap; gap: .75rem; margin-bottom: 1.5rem; }
+.content-filters .field-input { margin-bottom: 0; }
+#content-search { flex: 1 1 240px; }
+#content-sort { flex: 0 1 180px; cursor: pointer; }
+.content-filters .submit-button { width: auto; }
+.card-description a { color: inherit; }
