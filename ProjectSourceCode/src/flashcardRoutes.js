@@ -8,8 +8,8 @@ const { randomBytes, timingSafeEqual } = require('node:crypto');
 router.use((req, res, next) => {
   if (!req.session.deckCsrf) req.session.deckCsrf = randomBytes(32).toString('hex');
   res.locals.csrfToken = req.session.deckCsrf;
-  if (req.method === 'POST' && /^\/[^/]+\/(edit|rename|delete)$/.test(req.path)) {
-    const token = typeof req.body.csrfToken === 'string' ? req.body.csrfToken : '';
+  if (req.method === 'POST' && (/^\/[^/]+\/(edit|rename|delete)$/.test(req.path) || req.path === '/import')) {
+    const token = typeof req.body?.csrfToken === 'string' ? req.body.csrfToken : req.get('X-CSRF-Token') || '';
     const expected = Buffer.from(req.session.deckCsrf);
     const submitted = Buffer.from(token);
     if (submitted.length !== expected.length || !timingSafeEqual(submitted, expected)) {

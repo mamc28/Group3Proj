@@ -1,8 +1,2 @@
-# General
 .env
 node_modules/
-.DS_Store
-
-# Files for testing Cardset functionalities
-ProjectSourceCode/flashcards/test-cardsets.js
-ProjectSourceCode/flashcards/testData.txt
