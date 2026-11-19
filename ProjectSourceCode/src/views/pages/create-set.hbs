@@ -1,6 +1,9 @@
 <main class="set-content">
   <a href="/home">Back to Home</a>
-  <h1>{{#if isEditing}}Edit flashcard set{{else}}Create a flashcard set{{/if}}</h1>
+  <div class="set-editor-header">
+    <h1>{{#if isEditing}}Edit flashcard set{{else}}Create a flashcard set{{/if}}</h1>
+    {{#if isEditing}}<button type="button" class="create-button" id="open-publish-dialog">Publish set</button>{{/if}}
+  </div>
   {{> message}}
   <form action="{{#if isEditing}}/decks/{{deck_id}}/edit{{else}}/decks{{/if}}" method="post" id="create-set-form">
     <input type="hidden" name="csrfToken" value="{{csrfToken}}">
@@ -8,6 +11,11 @@
     <input class="field-input" id="set-title" name="title" value="{{title}}" maxlength="100" required>
     <label class="field-label" for="set-description">Description (optional)</label>
     <textarea class="field-input" id="set-description" name="description" rows="2">{{description}}</textarea>
+    <label class="field-label" for="set-visibility">Visibility</label>
+    <select class="field-input" id="set-visibility" name="visibility">
+        <option value="public" {{#if isPublic}}selected{{/if}}>Public — visible to friends</option>
+        <option value="private" {{#if isPrivate}}selected{{/if}}>Private — visible only to you</option>
+    </select>
     <p>Choose text, image, image + text, or images on both sides for each card. You can add up to 100 cards.</p>
     <p class="card-description">Images can be up to 2 MB each. Keep the complete set upload under 8 MB.</p>
     <noscript><p>Enable JavaScript to upload and preview images. Text cards can still be saved.</p></noscript>
@@ -60,5 +68,23 @@
     <button class="create-button" id="add-card" type="button" hidden>Add card</button>
     <button class="submit-button" type="submit">{{#if isEditing}}Save changes{{else}}Save set{{/if}}</button>
   </form>
+  {{#if isEditing}}
+  <dialog id="publish-dialog" class="publish-dialog">
+    <h2>Publish this set?</h2>
+    <p>Publishing permanently locks this set's title, description, visibility, and flashcards.</p>
+    <p>Your friends will still be able to study and copy it, and the set will become eligible for leaderboards.</p>
+    <p>You will not be able to edit or unpublish it afterward. You can still delete the set.</p>
+    <p><strong>Are you certain you want to publish?</strong></p>
+    <div class="set-actions">
+      <button type="button" class="create-button" id="cancel-publish">Cancel</button>
+      <form action="/decks/{{deck_id}}/publish" method="POST" id="publish-form">
+        <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+        <input type="hidden" name="confirmPublish" value="yes">
+        <button type="submit" class="submit-button">Yes, I'm certain</button>
+      </form>
+    </div>
+  </dialog>
+  {{/if}}
 </main>
 <script src="/js/create-set.js" defer></script>
+<script src="/js/publish-set.js" defer></script>

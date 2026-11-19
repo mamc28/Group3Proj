@@ -3,6 +3,7 @@
   <h1>{{title}}</h1>
   <p class="card-description">{{description}}</p>
   <p>{{cards.length}} cards</p>
+  <p class="card-description">Visibility: <strong>{{#if isPublished}}Published{{else}}{{#if isPrivate}}Private{{else}}Public{{/if}}{{/if}}</strong></p>
   <nav class="set-actions" aria-label="Manage this set">
     <a class="create-button" href="/decks/{{deck_id}}/edit">Edit set</a>
     <a class="create-button" href="/decks/{{deck_id}}/rename">Rename</a>
@@ -72,7 +73,9 @@
   {{/each}}
   </details>
   {{else}}
-    <div class="dashboard-card"><h2>No cards yet</h2><p>Add your first card to start studying.</p><a class="create-button" href="/decks/{{deck_id}}/edit">Add cards</a></div>
+    {{#if canEdit}}
+      <div class="dashboard-card"><h2>No cards yet</h2><p>Add your first card to start studying.</p><a class="create-button" href="/decks/{{deck_id}}/edit">Add cards</a></div>
+    {{/if}}
   {{/if}}
   <script src="/js/study-set.js" defer></script>
   <a href="/decks/new">Create another set</a>

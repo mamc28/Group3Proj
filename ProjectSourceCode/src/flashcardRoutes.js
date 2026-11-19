@@ -3,12 +3,19 @@ const axios = require('axios');
 const { db } = require('./db');
 const { parseCardImage } = require('./cardImage');
 const { randomBytes, timingSafeEqual } = require('node:crypto');
+const { getAccessibleDeck } = require('./deckAccess');
 
 // A session token protects existing sets from cross-site form submissions.
 router.use((req, res, next) => {
   if (!req.session.deckCsrf) req.session.deckCsrf = randomBytes(32).toString('hex');
   res.locals.csrfToken = req.session.deckCsrf;
-  if (req.method === 'POST' && (/^\/[^/]+\/(edit|rename|delete)$/.test(req.path) || req.path === '/import')) {
+  const protectedAction =
+    req.path === '/' ||
+    req.path === '/new' ||
+    req.path === '/import' ||
+    /^\/[1-9]\d*\/(edit|rename|delete|visibility|publish|copy)$/.test(req.path);
+
+  if (req.method === 'POST' && protectedAction) {
     const token = typeof req.body?.csrfToken === 'string' ? req.body.csrfToken : req.get('X-CSRF-Token') || '';
     const expected = Buffer.from(req.session.deckCsrf);
     const submitted = Buffer.from(token);
@@ -107,6 +114,7 @@ router.post(['/', '/:id/edit'], async (req, res) => { // Handles save set reques
   }
   const title = typeof req.body.title === 'string' ? req.body.title.trim() : '';
   const description = typeof req.body.description === 'string' ? req.body.description.trim() : '';
+  const visibility = typeof req.body.visibility === 'string' ? req.body.visibility : 'public';
   const input = req.body.cards;
   const cards = Array.isArray(input) ? input.map(card => ({
     card_id: typeof card?.card_id === 'string' && /^[1-9]\d*$/.test(card.card_id) && Number(card.card_id) <= 2147483647 ? Number(card.card_id) : null,
@@ -131,6 +139,12 @@ router.post(['/', '/:id/edit'], async (req, res) => { // Handles save set reques
     back: validateImage(card, 'backImage', card.isImageBoth),
   }));
   const form = { title, description, cards: cards.length ? cards : [{}], isEditing, deck_id: req.params.id };
+  form.visibility = visibility;
+  form.isPublic = visibility === 'public';
+  form.isPrivate = visibility === 'private';
+  if (!['private', 'public'].includes(visibility)) {
+    return res.status(400).render('pages/create-set', {...form, error: true, message: 'Invalid visibility setting.'});
+  }
   if (!title || title.length > 100 || !cards.length || cards.length > 100 ||
       cards.some(card => !['text', 'image', 'image-text', 'image-both'].includes(card.frontType) || !card.question || !card.answer)) {
     return res.status(400).render('pages/create-set', {
@@ -146,18 +160,25 @@ router.post(['/', '/:id/edit'], async (req, res) => { // Handles save set reques
       let created;
       if (isEditing) {
         created = await transaction.oneOrNone(
-          'SELECT deck_id FROM decks WHERE deck_id = $1 AND user_id = $2 FOR UPDATE',
+          'SELECT deck_id, visibility FROM decks WHERE deck_id = $1 AND user_id = $2 FOR UPDATE',
           [req.params.id, req.session.user.user_id]
         );
         if (!created) throw Object.assign(new Error('Set not found.'), { status: 404 });
+        if (created.visibility === 'published') {
+          throw Object.assign(new Error('Published sets cannot be edited.'),{ status: 403 });
+        }
         const existing = await transaction.any('SELECT card_id FROM flashcards WHERE deck_id = $1', [created.deck_id]);
         const ownedIds = new Set(existing.map(card => card.card_id));
         const submittedIds = cards.filter(card => card.card_id).map(card => card.card_id);
         if (submittedIds.some(id => !ownedIds.has(id)) || new Set(submittedIds).size !== submittedIds.length) {
           throw Object.assign(new Error('Invalid card selection.'), { status: 400 });
         }
-        await transaction.none('UPDATE decks SET title = $1, description = $2 WHERE deck_id = $3',
-          [title, description, created.deck_id]);
+        await transaction.none(
+          `UPDATE decks
+           SET title = $1, description = $2, visibility = $3
+           WHERE deck_id = $4`,
+          [title, description, visibility, created.deck_id]
+        );
         for (const card of existing) {
           if (!submittedIds.includes(card.card_id)) {
             await transaction.none('DELETE FROM flashcards WHERE card_id = $1 AND deck_id = $2', [card.card_id, created.deck_id]);
@@ -165,8 +186,10 @@ router.post(['/', '/:id/edit'], async (req, res) => { // Handles save set reques
         }
       } else {
         created = await transaction.one(
-          'INSERT INTO decks(user_id, title, description) VALUES($1, $2, $3) RETURNING deck_id',
-          [req.session.user.user_id, title, description]
+          `INSERT INTO decks(user_id, title, description, visibility)
+          VALUES($1, $2, $3, $4)
+          RETURNING deck_id`,
+          [req.session.user.user_id, title, description, visibility]
         );
       }
       // Insert sequentially so card_id preserves the submitted order.
@@ -191,6 +214,7 @@ router.post(['/', '/:id/edit'], async (req, res) => { // Handles save set reques
   } catch (error) {
     if (error.status === 404) return res.status(404).send('Set not found.');
     if (error.status === 400) return res.status(400).render('pages/create-set', { ...form, error: true, message: error.message });
+    if (error.status === 403) return res.status(403).send(error.message);
     console.error('Unable to save set:', error.code);
     return res.status(500).render('pages/create-set', {
       ...form, error: true, message: 'Unable to save your set. Please try again.',
@@ -200,9 +224,14 @@ router.post(['/', '/:id/edit'], async (req, res) => { // Handles save set reques
 
 router.get('/:id/edit', async (req, res) => {
   try {
-    const deck = await db.oneOrNone('SELECT deck_id, title, description FROM decks WHERE deck_id = $1 AND user_id = $2',
-      [req.params.id, req.session.user.user_id]);
+    const deck = await db.oneOrNone(
+      `SELECT deck_id, title, description, visibility
+       FROM decks
+       WHERE deck_id = $1 AND user_id = $2`,
+      [req.params.id, req.session.user.user_id]
+    );
     if (!deck) return res.status(404).send('Set not found.');
+    if (deck.visibility === 'published') return res.status(403).send('Published sets cannot be edited.');
     const rows = await db.any('SELECT * FROM flashcards WHERE deck_id = $1 ORDER BY card_id', [deck.deck_id]);
     const cards = rows.map(card => ({
       ...card,
@@ -212,7 +241,13 @@ router.get('/:id/edit', async (req, res) => {
       backImage: card.back_image_data ? `data:${card.back_image_type};base64,${card.back_image_data.toString('base64')}` : '',
     }));
     res.set('Cache-Control', 'private, no-store');
-    return res.render('pages/create-set', { ...deck, cards: cards.length ? cards : [{}], isEditing: true });
+    return res.render('pages/create-set', {
+      ...deck,
+      cards: cards.length ? cards : [{}],
+      isEditing: true,
+      isPublic: deck.visibility === 'public',
+      isPrivate: deck.visibility === 'private'
+    });
   } catch (error) {
     console.error('Unable to open editor:', error.code);
     return res.status(500).send('Unable to load your set. Please try again.');
@@ -221,10 +256,29 @@ router.get('/:id/edit', async (req, res) => {
 
 router.get(['/:id/rename', '/:id/delete'], async (req, res) => {
   try {
-    const deck = await db.oneOrNone('SELECT deck_id, title FROM decks WHERE deck_id = $1 AND user_id = $2',
-      [req.params.id, req.session.user.user_id]);
-    if (!deck) return res.status(404).send('Set not found.');
-    return res.render('pages/manage-set', { ...deck, isDelete: req.path.endsWith('/delete') });
+    const deck = await db.oneOrNone(
+      `SELECT deck_id, title, visibility
+       FROM decks
+       WHERE deck_id = $1 AND user_id = $2`,
+      [req.params.id, req.session.user.user_id]
+    );
+
+    if (!deck) {
+      return res.status(404).send('Set not found.');
+    }
+
+    const isDelete = req.path.endsWith('/delete');
+
+    // Published sets cannot be renamed, but they can be deleted.
+    if (!isDelete && deck.visibility === 'published') {
+      return res.status(403).send('Published sets cannot be renamed.');
+    }
+
+    return res.render('pages/manage-set', {
+      ...deck,
+      isDelete
+    });
+
   } catch (error) {
     console.error('Unable to load set settings:', error.code);
     return res.status(500).send('Unable to load your set. Please try again.');
@@ -233,17 +287,51 @@ router.get(['/:id/rename', '/:id/delete'], async (req, res) => {
 
 router.post('/:id/rename', async (req, res) => {
   try {
-    const deck = await db.oneOrNone('SELECT deck_id, title FROM decks WHERE deck_id = $1 AND user_id = $2',
-      [req.params.id, req.session.user.user_id]);
-    if (!deck) return res.status(404).send('Set not found.');
-    const title = typeof req.body.title === 'string' ? req.body.title.trim() : '';
-    if (!title || title.length > 100) {
-      return res.status(400).render('pages/manage-set', { ...deck, title, error: true, message: 'Enter a name up to 100 characters.' });
+    const deck = await db.oneOrNone(
+      `SELECT deck_id, title, visibility
+       FROM decks
+       WHERE deck_id = $1 AND user_id = $2`,
+      [req.params.id, req.session.user.user_id]
+    );
+
+    if (!deck) {
+      return res.status(404).send('Set not found.');
     }
-    const updated = await db.oneOrNone('UPDATE decks SET title = $1 WHERE deck_id = $2 AND user_id = $3 RETURNING deck_id',
-      [title, deck.deck_id, req.session.user.user_id]);
-    if (!updated) return res.status(404).send('Set not found.');
+
+    // Published sets cannot be renamed.
+    if (deck.visibility === 'published') {
+      return res.status(403).send('Published sets cannot be renamed.');
+    }
+
+    const title = typeof req.body.title === 'string'
+      ? req.body.title.trim()
+      : '';
+
+    if (!title || title.length > 100) {
+      return res.status(400).render('pages/manage-set', {
+        ...deck,
+        title,
+        error: true,
+        message: 'Enter a name up to 100 characters.'
+      });
+    }
+
+    const updated = await db.oneOrNone(
+      `UPDATE decks
+       SET title = $1
+       WHERE deck_id = $2
+         AND user_id = $3
+         AND visibility <> 'published'
+       RETURNING deck_id`,
+      [title, deck.deck_id, req.session.user.user_id]
+    );
+
+    if (!updated) {
+      return res.status(403).send('This set can no longer be renamed.');
+    }
+
     return res.redirect(`/decks/${deck.deck_id}`);
+
   } catch (error) {
     console.error('Unable to rename set:', error.code);
     return res.status(500).send('Unable to rename your set. Please try again.');
@@ -349,9 +437,35 @@ router.get(['/:id/cards/:cardId/image', '/:id/cards/:cardId/back-image'], async 
       back ?
         `SELECT f.back_image_data AS image_data, f.back_image_type AS image_type
          FROM flashcards f JOIN decks d ON d.deck_id = f.deck_id
-         WHERE d.deck_id = $1 AND f.card_id = $2 AND d.user_id = $3 AND f.back_image_data IS NOT NULL` :
-        `SELECT f.image_data, f.image_type FROM flashcards f JOIN decks d ON d.deck_id = f.deck_id
-         WHERE d.deck_id = $1 AND f.card_id = $2 AND d.user_id = $3 AND f.image_data IS NOT NULL`,
+         WHERE d.deck_id = $1 AND f.card_id = $2 AND (
+            d.user_id = $3
+            OR (
+              d.visibility IN ('public', 'published')
+              AND EXISTS (
+                SELECT 1
+                FROM friendships f
+                WHERE f.user_id = $3
+                  AND f.friend_id = d.user_id
+                  AND f.status = 'accepted'
+              )
+            )
+          )
+          AND f.back_image_data IS NOT NULL` :
+         `SELECT f.image_data, f.image_type FROM flashcards f JOIN decks d ON d.deck_id = f.deck_id
+          WHERE d.deck_id = $1 AND f.card_id = $2 AND (
+            d.user_id = $3
+            OR (
+              d.visibility IN ('public', 'published')
+              AND EXISTS (
+                SELECT 1
+                FROM friendships f
+                WHERE f.user_id = $3
+                  AND f.friend_id = d.user_id
+                  AND f.status = 'accepted'
+              )
+            )
+          )
+          AND f.image_data IS NOT NULL`,
       [req.params.id, req.params.cardId, req.session.user.user_id]
     );
     if (!card) return res.status(404).send('Image not found.');
@@ -363,22 +477,65 @@ router.get(['/:id/cards/:cardId/image', '/:id/cards/:cardId/back-image'], async 
   }
 });
 
+
 router.use('/:id/study', require('./studyRoutes'));
+
+
+router.post('/:id/publish', async (req, res) => {
+  if (req.body.confirmPublish !== 'yes') {
+    return res.status(400).send('Publication was not confirmed.');
+  }
+
+  try {
+    const updated = await db.oneOrNone(
+      `UPDATE decks
+       SET visibility = 'published'
+       WHERE deck_id = $1
+         AND user_id = $2
+         AND visibility IN ('public', 'private')
+       RETURNING deck_id`,
+      [req.params.id, req.session.user.user_id]
+    );
+
+    if (!updated) {
+      return res.status(403).send(
+        'Set not found, or it has already been published.'
+      );
+    }
+
+    return res.redirect(`/decks/${updated.deck_id}`);
+  } catch (error) {
+    console.error('Unable to publish set:', error.code);
+    return res.status(500).send('Unable to publish set.');
+  }
+});
+
 
 router.get('/:id', async (req, res) => {
   if (!/^[1-9]\d*$/.test(req.params.id) || Number(req.params.id) > 2147483647) { //Postgres max int value, make sure it doest exceed that
     return res.status(404).send('Set not found.');
   }
   try {
-    const deck = await db.oneOrNone(
-      'SELECT deck_id, title, description FROM decks WHERE deck_id = $1 AND user_id = $2',
-      [req.params.id, req.session.user.user_id]
+    const deck = await getAccessibleDeck(
+      req.params.id,
+      req.session.user.user_id
     );
     if (!deck) return res.status(404).send('Set not found.');
     const cards = await db.any(
       'SELECT card_id, question, answer, image_type, back_image_type, front_type IN (\'image-text\', \'image-both\') AS "showFrontText" FROM flashcards WHERE deck_id = $1 ORDER BY card_id', [deck.deck_id]
     );
-    return res.render('pages/set', { ...deck, cards });
+    const isOwner = deck.user_id === req.session.user.user_id;
+
+    return res.render('pages/set', {
+      ...deck,
+      cards,
+      isOwner,
+      canEdit: isOwner && deck.visibility !== 'published',
+      canCopy: !isOwner,
+      isPublic: deck.visibility === 'public',
+      isPrivate: deck.visibility === 'private',
+      isPublished: deck.visibility === 'published'
+    });
   } catch (error) {
     console.error('Unable to load set:', error.code);
     return res.status(500).send('Unable to load your set. Please try again.');

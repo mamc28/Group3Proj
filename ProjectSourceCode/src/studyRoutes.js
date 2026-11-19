@@ -2,12 +2,13 @@ const router = require('express').Router({ mergeParams: true });
 const { timingSafeEqual } = require('node:crypto');
 const { db } = require('./db');
 const { RATINGS, reviewIntervals } = require('./reviewScheduler');
+const { getAccessibleDeck } = require('./deckAccess');
 
 router.use((req, res, next) => {
   res.set('Cache-Control', 'private, no-store');
   if (req.method === 'POST') {
     const submitted = Buffer.from(typeof req.body.csrfToken === 'string' ? req.body.csrfToken : '');
-    const expected = Buffer.from(req.session.deckCsrf);
+    const expected = Buffer.from(req.session.deckCsrf || '');
     if (submitted.length !== expected.length || !timingSafeEqual(submitted, expected)) {
       return res.status(403).json({ message: 'Your study session expired. Reload the page and try again.' });
     }
@@ -17,8 +18,7 @@ router.use((req, res, next) => {
 
 router.get('/', async (req, res) => {
   try {
-    const deck = await db.oneOrNone('SELECT deck_id FROM decks WHERE deck_id = $1 AND user_id = $2',
-      [req.params.id, req.session.user.user_id]);
+    const deck = await getAccessibleDeck(req.params.id, req.session.user.user_id);
     if (!deck) return res.status(404).json({ message: 'Set not found.' });
     const rows = await db.any(
       `SELECT f.card_id, p.last_reviewed_at, p.next_review_at,
@@ -45,8 +45,26 @@ router.post('/reviews', async (req, res) => {
     const review = await db.tx(async t => {
       const userId = req.session.user.user_id;
       // Serialize reviews and deck edits so counters, history, and scheduling agree.
-      const deck = await t.oneOrNone('SELECT deck_id FROM decks WHERE deck_id = $1 AND user_id = $2 FOR UPDATE',
-        [req.params.id, userId]);
+      const deck = await t.oneOrNone(
+        `SELECT d.deck_id
+        FROM decks d
+        WHERE d.deck_id = $1
+        AND (
+          d.user_id = $2
+          OR (
+            d.visibility IN ('public', 'published')
+            AND EXISTS (
+              SELECT 1
+              FROM friendships f
+              WHERE f.user_id = $2
+                AND f.friend_id = d.user_id
+                AND f.status = 'accepted'
+            )
+          )
+        )
+        FOR UPDATE OF d`,
+        [req.params.id, userId]
+      );
       const card = deck && await t.oneOrNone('SELECT card_id FROM flashcards WHERE card_id = $1 AND deck_id = $2',
         [cardId, deck.deck_id]);
       if (!card) throw Object.assign(new Error('Card not found.'), { status: 404 });

@@ -382,11 +382,18 @@ res.render('pages/home', {
         // Their flashcard sets, newest first, with how many cards each one has.
         profile.sets = await db.any(
           `SELECT
+            decks.deck_id,
             decks.title,
-            COUNT(flashcards.card_id) || CASE WHEN COUNT(flashcards.card_id) = 1 THEN ' card' ELSE ' cards' END AS card_count
+            decks.visibility,
+            COUNT(flashcards.card_id) ||
+              CASE WHEN COUNT(flashcards.card_id) = 1
+                THEN ' card'
+                ELSE ' cards'
+              END AS card_count
           FROM decks
           LEFT JOIN flashcards ON flashcards.deck_id = decks.deck_id
           WHERE decks.user_id = $1
+            AND decks.visibility IN ('public', 'published')
           GROUP BY decks.deck_id
           ORDER BY decks.created_at DESC`,
           [friend.user_id]
