@@ -5,10 +5,14 @@
   <p>{{cards.length}} cards</p>
   <p class="card-description">Visibility: <strong>{{#if isPublished}}Published{{else}}{{#if isPrivate}}Private{{else}}Public{{/if}}{{/if}}</strong></p>
   <nav class="set-actions" aria-label="Manage this set">
-    <a class="create-button" href="/decks/{{deck_id}}/edit">Edit set</a>
-    <a class="create-button" href="/decks/{{deck_id}}/rename">Rename</a>
-    <a class="create-button" href="/decks/{{deck_id}}/export">Export set</a>
-    <a class="create-button danger-button" href="/decks/{{deck_id}}/delete">Delete set</a>
+    {{#if canEdit}}
+      <a class="create-button" href="/decks/{{deck_id}}/edit">Edit set</a>
+      <a class="create-button" href="/decks/{{deck_id}}/rename">Rename</a>
+    {{/if}}
+    {{#if isOwner}}
+      <a class="create-button" href="/decks/{{deck_id}}/export">Export set</a>
+      <a class="create-button danger-button" href="/decks/{{deck_id}}/delete">Delete set</a>
+    {{/if}}
   </nav>
   {{#if cards.length}}
   <section class="study-session" aria-label="Study cards" data-deck-id="{{deck_id}}" data-csrf-token="{{csrfToken}}" hidden>

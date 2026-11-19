@@ -9,12 +9,7 @@ const { getAccessibleDeck } = require('./deckAccess');
 router.use((req, res, next) => {
   if (!req.session.deckCsrf) req.session.deckCsrf = randomBytes(32).toString('hex');
   res.locals.csrfToken = req.session.deckCsrf;
-  const protectedAction =
-    req.path === '/' ||
-    req.path === '/new' ||
-    req.path === '/import' ||
-    /^\/[1-9]\d*\/(edit|rename|delete|visibility|publish|copy)$/.test(req.path);
-
+  const protectedAction = req.path === '/import' || /^\/[1-9]\d*\/(edit|rename|delete|visibility|publish|copy)$/.test(req.path);
   if (req.method === 'POST' && protectedAction) {
     const token = typeof req.body?.csrfToken === 'string' ? req.body.csrfToken : req.get('X-CSRF-Token') || '';
     const expected = Buffer.from(req.session.deckCsrf);
