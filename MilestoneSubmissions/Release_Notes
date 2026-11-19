@@ -40,6 +40,14 @@ In progress / verification needed
 - Added flash card creation system
 - Added different flashcard types (image + text)
 - Added flash card set editing, deletion, and renaming.
+
+November 14, 2026 — Vocabulary Dictionary API:
+- Added a Find definition button to the flashcard editor.
+- Connected the Free Dictionary API through an Express route using Axios.
+- Users can look up an English word, edit its definition, and save it as a flashcard.
+- Added messages for blank input, unknown words, and lookup failures.
+- Reset lookup messages and buttons when adding new cards.
+- Verified successful lookups, unknown-word handling, and saving and viewing definitions in study mode.
 - Added the friend request feature.
 - Added the content page.
 - Added a filtering system to the content page.

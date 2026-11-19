@@ -1,28 +1,90 @@
 (() => {
-  const container = document.getElementById('card-fields');
-  const add = document.getElementById('add-card');
-  const form = document.getElementById('create-set-form');
-  if (!container || !add || !form) return;
-  function renumber() {
-    const cards = [...container.children];
-    cards.forEach((card, index) => {
-      card.querySelector('.card-number').textContent = index + 1;
-      card.querySelector('.card-id').name = `cards[${index}][card_id]`;
-      card.querySelector('.card-question').name = `cards[${index}][question]`;
-      card.querySelector('.card-front-type').name = `cards[${index}][frontType]`;
-      card.querySelector('.card-image-data').name = `cards[${index}][image]`;
-      card.querySelector('.card-back-image-data').name = `cards[${index}][backImage]`;
-      card.querySelector('.card-answer').name = `cards[${index}][answer]`;
-      card.querySelector('.remove-card').hidden = cards.length === 1;
-    });
-    add.disabled = cards.length >= 100;
-  }
+    const container = document.getElementById('card-fields');
+    const add = document.getElementById('add-card');
+    const form = document.getElementById('create-set-form');
+    if (!container || !add || !form) return;
+    function renumber() {
+        const cards = [...container.children];
+        cards.forEach((card, index) => {
+            card.querySelector('.card-number').textContent = index + 1;
+            card.querySelector('.card-id').name = `cards[${index}][card_id]`;
+            card.querySelector('.card-question').name = `cards[${index}][question]`;
+            card.querySelector('.card-front-type').name = `cards[${index}][frontType]`;
+            card.querySelector('.card-image-data').name = `cards[${index}][image]`;
+            card.querySelector('.card-back-image-data').name = `cards[${index}][backImage]`;
+            card.querySelector('.card-answer').name = `cards[${index}][answer]`;
+            card.querySelector('.remove-card').hidden = cards.length === 1;
+        });
+        add.disabled = cards.length >= 100;
+    }
+
+    container.addEventListener('click', async event => {
+        const button = event.target.closest('.lookup-word');
+        if (!button) return;
+
+        const card = button.closest('.card-fields');
+        const front = card.querySelector('.card-question');
+        const back = card.querySelector('.card-answer');
+        const message = card.querySelector('.lookup-message');
+        const word = front.value.trim();
+
+        if (!word) {
+            message.textContent = 'Type a vocabulary word in the Front field first.';
+            front.focus();
+            return;
+        }
+
+        if (back.value.trim() &&
+            !window.confirm('Replace the current back text with a definition?')) {
+            return;
+        }
+
+        const originalAnswer = back.value;
+        button.disabled = true;
+        message.textContent = 'looking up definition...';
+
+    try {
+        const response = await fetch(
+            `/decks/dictionary?word=${encodeURIComponent(word)}`
+        );
+
+    if (response.redirected) {
+        throw new Error('Please log in again before looking up a word.');
+    }
+
+    const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || "Unable to find a definition.");
+        }
+
+        if (typeof data.definition !== 'string') {
+            throw new Error('No definition was returned.');
+        }
+
+        if (front.value.trim() !== word || back.value !== originalAnswer) {
+            message.textContent = 'Card text changed. Click Find definition again.';
+            return;
+        }
+
+        back.value = data.definition;
+            message.textContent = 'Definition added. You can edit it before saving.';
+        } catch (error) {
+            message.textContent = error.message || 'Dictionary lookup failed.';
+        } finally {
+            button.disabled = false;
+        }
+    
+        });
+
   add.hidden = false;
   renumber();
   add.addEventListener('click', () => {
     if (container.children.length >= 100) return;
     const card = container.firstElementChild.cloneNode(true);
-    card.querySelector('.card-id').value = '';
+      card.querySelector('.card-id').value = '';
+      card.querySelector('.lookup-word').disabled = false;
+      card.querySelector('.lookup-message').textContent = '';
     card.querySelectorAll('textarea').forEach(input => { input.value = ''; });
     card.querySelector('.card-front-type').value = 'text';
     card.querySelectorAll('.card-image-fields').forEach(group => {

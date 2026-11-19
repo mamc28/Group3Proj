@@ -1,4 +1,5 @@
 const router = require('express').Router();
+const axios = require('axios');
 const { db } = require('./db');
 const { parseCardImage } = require('./cardImage');
 const { randomBytes, timingSafeEqual } = require('node:crypto');
@@ -23,223 +24,59 @@ router.param('id', (req, res, next, id) => {
   next();
 });
 
+//Look up a vocabulary word without saving a card.
+router.get('/dictionary', async (req, res) => {
+    const word = typeof req.query.word === 'string'
+        ? req.query.word.trim()
+        : '';
 
-/*
- * Return the current deck CSRF token to the import interface.
- * The token is tied to the user's session.
- */
-router.get('/import-token', (req, res) => {
-  res.set('Cache-Control', 'private, no-store');
-  return res.json({ csrfToken: req.session.deckCsrf });
-});
+    if (!word || word.length > 100) {
+        return res.status(400).json({
+            message: 'Enter a word up to 100 characters.',
+        });
+    }
 
-
-/*
- * Import a flashcard set from the JSON format produced by our export route.
- * Every import creates a NEW deck.
- */
-router.post(
-  '/import',
-  require('express').text({
-    type: 'application/octet-stream',
-    limit: '12mb'
-  }),
-  async (req, res) => {
     try {
-      // Parse the uploaded JSON.
-      let imported;
-
-      try {
-        imported = JSON.parse(req.body);
-      } catch {
-        return res.status(400).json({
-          error: 'The selected file is not valid JSON.'
-        });
-      }
-
-      // Validate the overall export format.
-      if (
-        !imported ||
-        typeof imported !== 'object' ||
-        imported.format !== 'scramble-set' ||
-        imported.version !== 1
-      ) {
-        return res.status(400).json({
-          error: 'This file is not a supported Scramble set export.'
-        });
-      }
-
-      const title =
-        typeof imported.title === 'string'
-          ? imported.title.trim()
-          : '';
-
-      const description =
-        typeof imported.description === 'string'
-          ? imported.description.trim()
-          : '';
-
-      const inputCards = imported.cards;
-
-      if (
-        !title ||
-        title.length > 100 ||
-        typeof imported.description !== 'string' ||
-        !Array.isArray(inputCards) ||
-        inputCards.length < 1 ||
-        inputCards.length > 100
-      ) {
-        return res.status(400).json({
-          error: 'The set must have a title up to 100 characters and contain 1–100 cards.'
-        });
-      }
-
-      const allowedTypes = [
-        'text',
-        'image',
-        'image-text',
-        'image-both'
-      ];
-
-      let totalImageBytes = 0;
-
-      // Validate and decode every card before starting the transaction.
-      const cards = [];
-
-      for (const [index, card] of inputCards.entries()) {
-        if (
-          !card ||
-          typeof card !== 'object' ||
-          typeof card.question !== 'string' ||
-          typeof card.answer !== 'string'
-        ) {
-          return res.status(400).json({
-            error: `Card ${index + 1} is missing its question or answer.`
-          });
-        }
-
-        const question = card.question.trim();
-        const answer = card.answer.trim();
-        const frontType = card.frontType;
-
-        if (
-          !question ||
-          !answer ||
-          !allowedTypes.includes(frontType)
-        ) {
-          return res.status(400).json({
-            error: `Card ${index + 1} has invalid text or card type.`
-          });
-        }
-
-        const needsFrontImage = frontType !== 'text';
-        const needsBackImage = frontType === 'image-both';
-
-        let frontImage = null;
-        let backImage = null;
-
-        // Validate the front image when this card type requires one.
-        if (needsFrontImage) {
-          try {
-            frontImage = parseCardImage(card.image);
-            totalImageBytes += frontImage.data.length;
-          } catch (error) {
-            return res.status(400).json({
-              error: `Card ${index + 1} front image: ${error.message}`
-            });
-          }
-        } else if (card.image !== null) {
-          return res.status(400).json({
-            error: `Card ${index + 1} should not contain a front image.`
-          });
-        }
-
-        // Validate the back image for image-both cards.
-        if (needsBackImage) {
-          try {
-            backImage = parseCardImage(card.backImage);
-            totalImageBytes += backImage.data.length;
-          } catch (error) {
-            return res.status(400).json({
-              error: `Card ${index + 1} back image: ${error.message}`
-            });
-          }
-        } else if (card.backImage !== null) {
-          return res.status(400).json({
-            error: `Card ${index + 1} should not contain a back image.`
-          });
-        }
-
-        if (totalImageBytes > 8 * 1024 * 1024) {
-          return res.status(400).json({
-            error: 'The combined image size cannot exceed 8 MB.'
-          });
-        }
-
-        cards.push({
-          question,
-          answer,
-          frontType,
-          frontImage,
-          backImage
-        });
-      }
-
-      // Create the deck and its cards atomically.
-      const deck = await db.tx(async transaction => {
-        const created = await transaction.one(
-          `INSERT INTO decks(user_id, title, description)
-           VALUES($1, $2, $3)
-           RETURNING deck_id`,
-          [req.session.user.user_id, title, description]
+        const response = await axios.get(
+            `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`,
+            { timeout: 8000 }
         );
 
-        // Insert sequentially so the card order is preserved.
-        for (const card of cards) {
-          await transaction.none(
-            `INSERT INTO flashcards(
-              deck_id,
-              question,
-              answer,
-              image_data,
-              image_type,
-              front_type,
-              back_image_data,
-              back_image_type
+        const entry = response.data?.[0];
+
+        const meaning = entry?.meanings?.find(item =>
+            item.definitions?.some(item =>
+                typeof item.definition === 'string' && item.definition.trim()
             )
-            VALUES($1, $2, $3, $4, $5, $6, $7, $8)`,
-            [
-              created.deck_id,
-              card.question,
-              card.answer,
-              card.frontImage?.data || null,
-              card.frontImage?.type || null,
-              card.frontType,
-              card.backImage?.data || null,
-              card.backImage?.type || null
-            ]
-          );
+        );
+
+        const definition = meaning?.definitions?.find(item =>
+            typeof item.definition === 'string' && item.definition.trim()
+        );
+
+        if (!definition) {
+            return res.status(404).json({
+                message: 'No definition found. Try another word.',
+            });
         }
 
-        return created;
-      });
-
-      return res.status(201).json({
-        success: true,
-        deckId: deck.deck_id,
-        redirectUrl: `/decks/${deck.deck_id}`
-      });
-
+        return res.json({
+            word: entry.word || word,
+            partOfSpeeach: meaning.partOfSpeech || '',
+            definition: definition.definition,
+        });
     } catch (error) {
-      console.error('Unable to import set:', error.code);
+        if (error.response?.status === 404) {
+            return res.status(404).json({
+                message: 'No definition found. Check the spelling.',
+            });
+        }
 
-      return res.status(500).json({
-        error: 'Unable to import this set. Please try again.'
-      });
+        return res.status(502).json({
+            message: 'Dictionary lookup is unavailable. Please try again.',
+        });
     }
-  }
-);
-
+});
 
 router.get('/new', (req, res) => {
   res.render('pages/create-set', { cards: [{}] }); // Creates an array containing one empty object (one blank card)
